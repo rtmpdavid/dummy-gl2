@@ -4,7 +4,8 @@
 	:cl-fad
 	#:dummy-gl2.config
 	:rtmp-utils)
-  (:export :list-assets))
+  (:export :list-assets
+   :load-asset))
 (in-package :dummy-gl2.assets)
 
 (defparameter *assets* (make-hash-table :test #'equal))
@@ -44,12 +45,14 @@
 
 (defun load-png (filename)
   (with-open-file (img (absolute-asset-name filename) :element-type '(unsigned-byte 8))
-    (let ((img (png:decode img)))
-      (list :width (array-dimension img 1)
-	    :height (array-dimension img 0)
-	    :data (make-array (reduce #'* (array-dimensions img) :initial-value 1)
-			      :element-type (array-element-type img)
-			      :displaced-to img)))))
+    (let ((img (png:decode img :preserve-alpha t)))
+      img
+      ;; (list :width (array-dimension img 1)
+      ;; 	    :height (array-dimension img 0)
+      ;; 	    :data (make-array (reduce #'* (array-dimensions img) :initial-value 1)
+      ;; 			      :element-type (array-element-type img)
+      ;; 			      :displaced-to img))
+      )))
 
 (defun %load-asset-switch (filename)
   (if (null (pathname-type filename))
