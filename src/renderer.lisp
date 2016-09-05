@@ -4,12 +4,21 @@
 	#:rtmp-utils))
 (in-package :dummy-gl2)
 
-(defconstant square-2d (make-square nil nil nil t))
-(defconstant square-3d (make-square t nil nil t))
-(defconstant square-2d-tex (make-square nil nil t t))
-(defconstant square-3d-tex (make-square t nil t t))
-(defconstant square-2d-cols-tex (make-square nil t t t))
-(defconstant square-3d-cols-tex (make-square t t t t))
+(defvar static-meshes (make-instance 'gl-vertices))
+
+(defmacro define-and-add-mesh (name &body body)
+  `(progn (defvar ,name ,@body)
+	  (add-meshes static-meshes ,name)))
+
+(define-and-add-mesh square-2d (make-square nil nil nil t))
+(define-and-add-mesh square-3d (make-square t nil nil t))
+(define-and-add-mesh square-2d-tex (make-square nil nil t t))
+(define-and-add-mesh square-3d-tex (make-square t nil t t))
+(define-and-add-mesh square-2d-cols-tex (make-square nil t t t))
+(define-and-add-mesh square-3d-cols-tex (make-square t t t t))
+
+(defun init-renderer ()
+  (alloc-vertices static-meshes))
 
 (defun clear-buffers (&optional &key (color '(0.15 0.1 0.1 1.0)) (buffers (list :depth-buffer :color-buffer)))
   (apply #'gl:clear-color color)

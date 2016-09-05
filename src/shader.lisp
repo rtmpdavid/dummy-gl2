@@ -17,11 +17,11 @@
 
 (defvar gpu-programs (make-hash-table))
 
-(defstruct (gpu-program (:conc-name gpu-program))
-  ())
-
-(defun program-stage (program shader)
-  )
+(defun program-stage (program stage)
+  (loop for p in program
+	if (eq (slot-value p 'stage-type) stage)
+	  do (return p)
+	finally (return nil)))
 
 (defun get-gpu-program (name)
   (gethash name gpu-programs))

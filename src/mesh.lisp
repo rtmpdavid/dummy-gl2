@@ -27,10 +27,11 @@
 (defstruct (mesh (:conc-name mesh-)
 		 (:constructor make-mesh
 		     (n-verts n-elts layout)))
-  (length 0 :type fixnum)
   (verts (make-simple-array (* (layout-size layout) n-verts) 'single-float) :type (simple-array single-float))
   (elts (make-simple-array n-elts 'fixnum) :type (simple-array fixnum))
   (layout nil :type list)
+  (gl-array nil)
+  (offset 0)
   (id (incf mesh-counter) :read-only t))
 
 (defun attrib-offset (layout attrib &optional (index 0))

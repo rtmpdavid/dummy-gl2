@@ -46,6 +46,7 @@
 	     (unwind-protect		      
 		  (sdl2:in-main-thread ()
 		    (init-window :w w :h h :title title)
+		    (init-renderer)
 		    (print-info)
 		    (main-loop))
 	       (progn
