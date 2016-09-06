@@ -35,7 +35,8 @@
   (format t "Creating OpenGL context~%")
   (setf *gl-context* (sdl2:gl-create-context *window*))
   (format t "Making OpenGL context current~%")
-  (sdl2:gl-make-current *window* *gl-context*))
+  (sdl2:gl-make-current *window* *gl-context*)
+  (sdl2:gl-set-swap-interval 0))
 
 (defun start-main-loop (&key (w 320) (h 640) (title "foobar"))
   (setf *sdl2-thread*
@@ -65,6 +66,7 @@
 
 (defun quit ()
   (when *gl-context*
+    (free-buffers static-meshes)
     (format t "Destroying OpenGL context~%")
     (sdl2:gl-delete-context *gl-context*))
   (when *window*
@@ -76,13 +78,35 @@
 	*gl-context* nil))
 
 (defun main-loop ()
-  (sdl2:with-event-loop (:method :poll)
-    (:idle ()
-	   (update-swank)
-	   (continuable (idle-fun)))
-    (:quit () t)))
+  (let ((vao (gl:gen-vertex-array)))
+    (gl:bind-vertex-array vao)
+    (sdl2:with-event-loop (:method :poll)
+      (:idle ()
+	     (update-swank)
+	     (continuable (idle-fun)))
+      (:quit () t))
+    (gl:delete-vertex-arrays vao)))
+
+(defvar foo 0)
+(defvar old-time 0)
 
 (defun idle-fun ()
+  (incf foo)
+  (when (zerop (mod foo 500))
+    (let ((tiem (get-internal-run-time)))
+      (format t " ~a   ~a~%" 
+	      (/ 500.0 (/ (- tiem old-time) 1000.0)) foo)
+      (setf old-time tiem)))
   (clear-buffers :color '(0.15 0.1 0.1 1.0))
+  (bind-vbo-data static-meshes)
+  (bind-ebo-data static-meshes)
+  (use-gl-shader :trivial-color-uniform)
+  (gl:uniformf (gl:get-uniform-location 
+  		(shader-object (get-gl-shader :trivial-color-uniform))
+  		"COL3")
+  	       1.0 1.0 1.0)
+  (gl:enable-vertex-attrib-array 0)
+  (draw-mesh square-3d)
 
+  
   (sdl2:gl-swap-window *window*))

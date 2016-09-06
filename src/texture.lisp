@@ -17,3 +17,5 @@
 		     	      do (setf (aref pattern j (+ (* i 3) k)) (elt color k)))))
     pattern))
 
+
+
