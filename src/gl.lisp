@@ -4,16 +4,8 @@
    :rtmp-utils))
 (in-package :dummy-gl2)
 
-(defvar gl-vaos (make-hash-table))
-;; (defvar gl-vertices (make-hash-table))
-(defvar gl-elements (make-hash-table))
-(defvar gl-textures (make-hash-table))
 
 
-(defun invalidate-shader (name)
-  ;; (when (gethash name gl-shaders)
-  ;;   (setf (gethash name gl-shaders) nil))
-  )
 
 (defclass gl-vertices ()
   ((gl-array
