@@ -24,6 +24,7 @@
 			     (:file "mesh")
 			     (:file "gl")
 			     (:file "texture")
+			     (:file "shader-compiler")
 			     (:file "shader")
 			     (:file "renderer")
 			     (:file "dummy-gl2")))
