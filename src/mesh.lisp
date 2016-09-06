@@ -22,8 +22,6 @@
 (defun layout-size (layout)
   (reduce #'+ (mapcar #'attrib-size layout)))
 
-(defvar mesh-counter 0)
-
 (defstruct (mesh (:conc-name mesh-)
 		 (:constructor make-mesh
 		     (n-verts n-elts layout)))
@@ -32,9 +30,8 @@
   (layout nil :type list)
   (mode :triangles)
   (gl-array nil)
-  (offset 0)
-  (offset-elts 0)
-  (id (incf mesh-counter) :read-only t))
+  (offset 0 :type fixnum)
+  (offset-elts 0 :type fixnum))
 
 (defun attrib-offset (layout attrib &optional (index 0))
   (when (not (find attrib layout)) (error "Attrib not found"))
@@ -58,11 +55,13 @@
 	do (setf (aref (mesh-verts mesh) i) n)))
 
 (defun attrib-pointer-args (attrib mesh &optional (normalized nil))
-  (list (attrib-size attrib)
+  (list (attrib-position attrib)
+	(attrib-size attrib)
 	:float
 	normalized
 	(* 4 (layout-size (mesh-layout mesh)))
 	(* 4 (+ (mesh-offset mesh) (attrib-offset (mesh-layout mesh) attrib)))))
+
 (defun mesh-set-vert (mesh index &key (pos2 nil pos2p) (pos3 nil pos3p)
 				   (col3 nil col3p) (col4 nil col4p)
 				   (nor2 nil nor2p) (nor3 nil nor3p)
