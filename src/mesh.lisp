@@ -7,8 +7,8 @@
 (defparameter attrib-sizes
   (list :pos2 2
 	:pos3 3
-	:col3  3
-	:col4  3
+	:col3 3
+	:col4 4
 	:tex  2
 	:nor2 2
 	:nor3 3))
