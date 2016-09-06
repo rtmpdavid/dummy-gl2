@@ -34,7 +34,7 @@
    (meshes
     :initform nil
     :accessor verts-meshes)
-   (vertex-array-object
+   (vertex-buffer-object
     :initform nil
     :accessor verts-vbo)
    (element-array-object
