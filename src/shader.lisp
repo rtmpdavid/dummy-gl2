@@ -15,6 +15,21 @@
 ;; 				  (* x x)))
 ;; 			 (v! 1.0 1.0 hmm (fun
 
+(defparameter attrib-positions
+  (list :pos2 0
+	:pos3 0
+	:col3 1
+	:col4 1
+	:tex  2
+	:nor2 3
+	:nor3 3))
+
+(defun attrib-position (attrib)
+  (loop for key in attrib-positions by #'cddr
+	and value in (cdr attrib-positions) by #'cddr
+	if (string= (symbol-name attrib) (symbol-name key))
+	  do (return value)))
+
 (defvar gl-shaders (make-hash-table))
 
 (defclass gl-shader ()
@@ -37,8 +52,8 @@
   (restart-case (progn (when (and (not force-reload) (get-gl-shader name))
 			 (cerror "Set anyway"
 				 (format nil "GLSL program ~a is already defined, do you wish to continue?" name)))
-		       (let ((compile-result (v-compile uniforms version :vertex vertex
-									 :fragment fragment))
+		       (let ((compile-result (translate-shader uniforms version :vertex vertex
+										:fragment fragment))
 			     (gl-program (gethash name gl-shaders)))
 			 (flet ((result-stage (stage)
 				  (find stage compile-result :key #'(lambda (s) (slot-value s 'stage-type)))))
@@ -77,14 +92,10 @@
 (add-gpu-program :trivial-color-uniform :force-reload t
 					:uniforms '((col3 :vec3))
 					:vertex '(((pos3 :vec3))
-						  (values
-						   (v! (- pos3 (v! 0.5  0.5 0.0)) 0.5)
-						   (v2! (x (* pos3 20.00)) (y (* pos3 20.0)))))
-					:fragment '(((pos :vec2))
-						    (let ((red (sin (x pos)))
-							  (green (cos (y pos)))
-							  (blue (atan (x pos) (y pos))))
-						      (v! red green blue 1.0))))
+						  (v! pos3 1.0))
+					:fragment '((())
+						    (v! col3 1.0)))
+
 
 (defun compile-shader (target source)
   (let ((shader (gl:create-shader target)))
@@ -94,6 +105,11 @@
 	(let ((compilation-status (gl:get-shader-info-log shader)))
 	  (gl:delete-shader shader)
 	  (list nil compilation-status)))))
+
+(defun shader-bind-attrib-locations (shader-program stage-vert)
+  (let ((in-args (in-args stage-vert)))
+    (loop for arg in in-args
+	  do (gl:bind-attrib-location shader-program (attrib-position (car arg)) (car (last arg))))))
 
 (defun compile-gl-shader-program (gl-shader)
   (when (shader-object gl-shader) (gl:delete-program (shader-object gl-shader)))
@@ -107,6 +123,7 @@
       (gl:attach-shader shader-program (first vertex-shader))
       (gl:attach-shader shader-program (first fragment-shader))
       ;;vertex shader input attrib locations
+      (shader-bind-attrib-locations shader-program (stage-vert gl-shader)) 
       ;;fragment shader output color numbers
       ;;transform feedback output capturing
       ;;program separation
@@ -127,7 +144,6 @@
   (when (not (shader-object gl-shader))
     (compile-gl-shader-program gl-shader))
   (gl:get-attrib-location (shader-object gl-shader) (symbol-name attrib)))
-
 
 (defun use-gl-shader (name)
   (let ((gl-shader (get-gl-shader name)))
