@@ -36,7 +36,8 @@
   (setf *gl-context* (sdl2:gl-create-context *window*))
   (format t "Making OpenGL context current~%")
   (sdl2:gl-make-current *window* *gl-context*)
-  (sdl2:gl-set-swap-interval 0))
+  (sdl2:gl-set-swap-interval 0)
+  )
 
 (defun start-main-loop (&key (w 320) (h 640) (title "foobar"))
   (setf *sdl2-thread*
@@ -82,12 +83,12 @@
 (defun main-loop ()
   (setf vao (gl:gen-vertex-array))
   (gl:bind-vertex-array vao)
-    (gl:enable-vertex-attrib-array (attrib-position :pos3))
+  (gl:enable-vertex-attrib-array (attrib-position :pos3))
   
   (bind-vbo-buffer static-meshes)
   (bind-vbo-data static-meshes)
-  ;; (bind-ebo-buffer static-meshes)
-  ;; (bind-ebo-data static-meshes)
+  (bind-ebo-buffer static-meshes)
+  (bind-ebo-data static-meshes)
 
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
@@ -103,22 +104,22 @@
   (incf frame-count)
   (let ((time (get-internal-real-time)))
     (when (> (- time old-time) 1000)
-      (print frame-count)
+      (format t "~a ~a~%" frame-count polygon-count-last)
       (setf frame-count 0
   	    old-time time)))
   (clear-buffers :color '(0.0 0.1 0.1 1.0))
 
   (use-gl-shader :trivial)
 
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
-  (draw-mesh random-verts-1 )
+  ;; (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 random-verts-0))
+  ;; (loop for i from 0 to 5000
+  ;;    do (draw-mesh random-verts-0)
+  (bind-vbo-buffer static-meshes)
+  (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 random-verts-5))
+  (draw-mesh random-verts-5)
+  (draw-mesh random-verts-5)
+  (draw-mesh random-verts-5)
+  (unbind-vbo-buffer)
 
-  (sdl2:gl-swap-window *window*))
+  (flush-renderer))
+

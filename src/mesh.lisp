@@ -61,8 +61,10 @@
 	:float
 	normalized
 	(* 4 (layout-size (mesh-layout mesh)))
-	(* 4 (+ (mesh-offset mesh)
-		(attrib-offset (mesh-layout mesh) attrib)))))
+	(cffi:inc-pointer
+	 (cffi:null-pointer)
+	 (* 4 (+ (mesh-offset mesh)
+		 (attrib-offset (mesh-layout mesh) attrib))))))
 
 (defun mesh-set-vert (mesh index &key (pos2 nil pos2p) (pos3 nil pos3p)
 				   (col3 nil col3p) (col4 nil col4p)
