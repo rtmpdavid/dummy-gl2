@@ -29,6 +29,7 @@
   (elts (make-simple-array n-elts 'fixnum) :type (simple-array fixnum))
   (layout nil :type list)
   (mode :triangles)
+  (vao nil)
   (gl-array nil)
   (offset 0 :type fixnum)
   (offset-elts 0 :type fixnum))
@@ -54,13 +55,13 @@
 	repeat (attrib-size attrib)
 	do (setf (aref (mesh-verts mesh) i) n)))
 
-(defun attrib-pointer-args (attrib mesh &optional (normalized nil))
-  (list (attrib-position attrib)
-	(attrib-size attrib)
-	:float
-	normalized
-	(* 4 (layout-size (mesh-layout mesh)))
-	(* 4 (+ (mesh-offset mesh) (attrib-offset (mesh-layout mesh) attrib)))))
+(defun attrib-pointer-args (attrib mesh &optional (normalized :false))
+  (print (list (attrib-position attrib)
+	       (attrib-size attrib)
+	       :float
+	       normalized
+	       (* 4 (layout-size (mesh-layout mesh)))
+	       (* 4 (+ (mesh-offset mesh) (attrib-offset (mesh-layout mesh) attrib))))))
 
 (defun mesh-set-vert (mesh index &key (pos2 nil pos2p) (pos3 nil pos3p)
 				   (col3 nil col3p) (col4 nil col4p)
@@ -94,3 +95,14 @@
 				    2 3 0))
       mesh)))
 
+(defun make-random-mesh (n-triangles)
+  (let ((mesh (make-mesh (* n-triangles 3)
+			 (* n-triangles 3)
+			 (list :pos3))))
+    (loop for i from 0 to (1- (* n-triangles 3))
+	  do (mesh-set-vert mesh i :pos3 (list (random 0.5)
+					       (random 0.5)
+					       0.0)))
+    (loop for i from 0 to (1- (* n-triangles 3))
+	  do (setf (aref (mesh-elts mesh) i) i))
+    mesh))

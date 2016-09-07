@@ -77,36 +77,40 @@
   (setf *window* nil
 	*gl-context* nil))
 
-(defun main-loop ()
-  (let ((vao (gl:gen-vertex-array)))
-    (gl:bind-vertex-array vao)
-    (sdl2:with-event-loop (:method :poll)
-      (:idle ()
-	     (update-swank)
-	     (continuable (idle-fun)))
-      (:quit () t))
-    (gl:delete-vertex-arrays vao)))
+(defvar vao nil)
 
-(defvar foo 0)
+(defun main-loop ()
+  (setf vao (gl:gen-vertex-array))
+  (gl:bind-vertex-array vao)
+  (sdl2:with-event-loop (:method :poll)
+    (:idle ()
+	   (update-swank)
+	   (continuable (idle-fun)))
+    (:quit () t))
+  (gl:delete-vertex-arrays vao))
+
+(defvar frame-count 0)
 (defvar old-time 0)
 
 (defun idle-fun ()
-  (incf foo)
-  (when (zerop (mod foo 500))
-    (let ((tiem (get-internal-run-time)))
-      (format t " ~a   ~a~%" 
-	      (/ 500.0 (/ (- tiem old-time) 1000.0)) foo)
-      (setf old-time tiem)))
-  (clear-buffers :color '(0.15 0.1 0.1 1.0))
-  (bind-vbo-data static-meshes)
-  (bind-ebo-data static-meshes)
-  (use-gl-shader :trivial-color-uniform)
-  (gl:uniformf (gl:get-uniform-location 
-  		(shader-object (get-gl-shader :trivial-color-uniform))
-  		"COL3")
-  	       1.0 1.0 1.0)
-  (gl:enable-vertex-attrib-array 0)
-  (draw-mesh square-3d)
+  (incf frame-count)
+  (let ((time (get-internal-real-time)))
+    (when (> (- time old-time) 1000)
+      (print frame-count)
+      (setf frame-count 0
+  	    old-time time)))
+  (clear-buffers :color '(0.0 0.1 0.1 1.0))
 
+  (gl:enable-vertex-attrib-array (attrib-position :pos3))
   
+  (bind-vbo-buffer static-meshes)
+  (bind-vbo-data static-meshes)
+  (bind-ebo-buffer static-meshes)
+  (bind-ebo-data static-meshes)
+
+  (use-gl-shader :trivial)
+  
+  (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 square-3d))
+
+  (draw-mesh square-3d)
   (sdl2:gl-swap-window *window*))

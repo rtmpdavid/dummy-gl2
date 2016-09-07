@@ -4,9 +4,6 @@
    :rtmp-utils))
 (in-package :dummy-gl2)
 
-
-
-
 (defclass gl-vertices ()
   ((gl-array
     :initform nil
@@ -56,7 +53,13 @@
   (dolist (mesh meshes)
     (add-mesh vertices mesh)))
 
-(defun alloc-vertices (vertices) 
+(defun push-gl-array (glarray seq count offset)
+  (loop for i from 0
+	do (setf (gl:glaref glarray (+ offset i)) (elt seq i))
+	repeat count))
+
+(defun alloc-vertices (vertices)
+  (format *standard-output* "Allocating vertices.~%")
   (when (verts-array vertices) (gl:free-gl-array (verts-array vertices)))
   (when (verts-array-elts vertices) (gl:free-gl-array (verts-array-elts vertices)))
   (setf (verts-array vertices) (gl:alloc-gl-array :float (verts-length vertices))
@@ -64,18 +67,16 @@
   (loop for mesh in (verts-meshes vertices)
 	with index = 0
 	with index-elts = 0
+	;; copy vertex data
 	do (setf (mesh-offset mesh) index)
+	   (let ((vert-count (length (mesh-verts mesh))))
+	     (push-gl-array (verts-array vertices) (mesh-verts mesh) vert-count index)
+	     (incf index vert-count))
+	   ;; copy element data
 	   (setf (mesh-offset-elts mesh) index-elts)
-	   (loop for element across (mesh-verts mesh)
-		 for i from 0 
-		 do (setf (gl:glaref (verts-array vertices) index)
-			  (aref (mesh-verts mesh) i))
-		    (incf index))
-	   (loop for element across (mesh-elts mesh)
-		 for i from 0 
-		 do (setf (gl:glaref (verts-array-elts vertices) index-elts)
-			  (aref (mesh-elts mesh) i))
-		    (incf index-elts)))
+	   (let ((elt-count (length (mesh-elts mesh))))
+	     (push-gl-array (verts-array-elts vertices) (mesh-elts mesh) elt-count index-elts)
+	     (incf index-elts elt-count)))
   (setf (gl-array-valid-p vertices) t))
 
 (defun free-vertices (vertices)
