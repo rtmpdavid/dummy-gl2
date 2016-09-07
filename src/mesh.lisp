@@ -56,12 +56,13 @@
 	do (setf (aref (mesh-verts mesh) i) n)))
 
 (defun attrib-pointer-args (attrib mesh &optional (normalized :false))
-  (print (list (attrib-position attrib)
-	       (attrib-size attrib)
-	       :float
-	       normalized
-	       (* 4 (layout-size (mesh-layout mesh)))
-	       (* 4 (+ (mesh-offset mesh) (attrib-offset (mesh-layout mesh) attrib))))))
+  (list (attrib-position attrib)
+	(attrib-size attrib)
+	:float
+	normalized
+	(* 4 (layout-size (mesh-layout mesh)))
+	(* 4 (+ (mesh-offset mesh)
+		(attrib-offset (mesh-layout mesh) attrib)))))
 
 (defun mesh-set-vert (mesh index &key (pos2 nil pos2p) (pos3 nil pos3p)
 				   (col3 nil col3p) (col4 nil col4p)

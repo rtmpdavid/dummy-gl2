@@ -13,12 +13,12 @@
 
 (define-and-add-mesh square-2d (make-square nil nil nil))
 (define-and-add-mesh square-3d (make-square t nil nil))
-(define-and-add-mesh square-2d-tex (make-square nil nil t))
-(define-and-add-mesh square-3d-tex (make-square t nil t))
-(define-and-add-mesh square-2d-cols-tex (make-square nil t t))
-(define-and-add-mesh square-3d-cols-tex (make-square t t t))
+;; (define-and-add-mesh square-2d-tex (make-square nil nil t))
+;; (define-and-add-mesh square-3d-tex (make-square t nil t))
+;; (define-and-add-mesh square-2d-cols-tex (make-square nil t t))
+;; (define-and-add-mesh square-3d-cols-tex (make-square t t t))
 
-(define-and-add-mesh random-verts-0 (make-random-mesh 6))
+;; (define-and-add-mesh random-verts-0 (make-random-mesh 100))
 ;; (define-and-add-mesh random-verts-1 (make-random-mesh 1000))
 ;; (define-and-add-mesh random-verts-2 (make-random-mesh 10000))
 ;; (define-and-add-mesh random-verts-3 (make-random-mesh 100000))
@@ -78,6 +78,6 @@
     (when (not gl-array) (error "Mesh does not have gl array set"))
     (when (not (gl-array-valid-p gl-array)) (alloc-vertices gl-array))
     (%gl:draw-elements :triangles
-     		       (length (mesh-elts mesh))
+		       (length (mesh-elts mesh))
 		       :unsigned-int
-		       (mesh-offset-elts mesh))))
+		       (* 4 (mesh-offset-elts mesh)))))
