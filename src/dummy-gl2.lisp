@@ -82,6 +82,13 @@
 (defun main-loop ()
   (setf vao (gl:gen-vertex-array))
   (gl:bind-vertex-array vao)
+    (gl:enable-vertex-attrib-array (attrib-position :pos3))
+  
+  (bind-vbo-buffer static-meshes)
+  (bind-vbo-data static-meshes)
+  ;; (bind-ebo-buffer static-meshes)
+  ;; (bind-ebo-data static-meshes)
+
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -101,16 +108,17 @@
   	    old-time time)))
   (clear-buffers :color '(0.0 0.1 0.1 1.0))
 
-  (gl:enable-vertex-attrib-array (attrib-position :pos3))
-  
-  (bind-vbo-buffer static-meshes)
-  (bind-vbo-data static-meshes)
-  (bind-ebo-buffer static-meshes)
-  (bind-ebo-data static-meshes)
-
   (use-gl-shader :trivial)
-  
-  (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 square-3d))
 
-  (draw-mesh square-3d)
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+  (draw-mesh random-verts-1 )
+
   (sdl2:gl-swap-window *window*))

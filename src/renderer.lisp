@@ -18,8 +18,8 @@
 ;; (define-and-add-mesh square-2d-cols-tex (make-square nil t t))
 ;; (define-and-add-mesh square-3d-cols-tex (make-square t t t))
 
-;; (define-and-add-mesh random-verts-0 (make-random-mesh 100))
-;; (define-and-add-mesh random-verts-1 (make-random-mesh 1000))
+(define-and-add-mesh random-verts-0 (make-random-mesh 100))
+(define-and-add-mesh random-verts-1 (make-random-mesh 1000))
 ;; (define-and-add-mesh random-verts-2 (make-random-mesh 10000))
 ;; (define-and-add-mesh random-verts-3 (make-random-mesh 100000))
 
@@ -73,11 +73,31 @@
 	  do (print (attrib-pointer-args attrib layout))
 	  )))
 
+(defvar current-mesh nil)
+
 (defun draw-mesh (mesh)
+  (declare (inline))
   (let ((gl-array (mesh-gl-array mesh)))
     (when (not gl-array) (error "Mesh does not have gl array set"))
     (when (not (gl-array-valid-p gl-array)) (alloc-vertices gl-array))
+    (when (not (eq mesh current-mesh))
+      (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 mesh))
+      (setf current-mesh mesh))
+    ;; (%gl:draw-range-elements  :triangles
+    ;; 			      (mesh-offset-elts mesh)
+    ;; 			      (verts-length-elts gl-array)
+    ;; 			      (length (mesh-elts mesh))
+    ;; 			      :unsigned-short
+    ;; 			      (slot-value (verts-array-elts gl-array) 'gl::pointer)
+    ;; 			      )
     (%gl:draw-elements :triangles
-		       (length (mesh-elts mesh))
-		       :unsigned-int
-		       (* 4 (mesh-offset-elts mesh)))))
+    		       (length (mesh-elts mesh))
+    		       :unsigned-int
+    		       (cffi:incf-pointer
+    			(slot-value (verts-array-elts gl-array) 'gl::pointer)
+    			(* 4 (mesh-offset-elts mesh))
+    			)
+		       
+    		       ;; (* 4 (mesh-offset-elts mesh))
+    		       )
+    ))
