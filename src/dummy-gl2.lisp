@@ -94,7 +94,7 @@
 	   (update-swank)
 	   (continuable (idle-fun)))
     (:quit () t))
-  (gl:delete-vertex-arrays vao))
+  (gl:delete-vertex-arrays (list vao)))
 
 (defvar frame-count 0)
 (defvar old-time 0)
