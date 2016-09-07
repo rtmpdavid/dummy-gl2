@@ -10,8 +10,8 @@
 	       :cl-opengl
 	       :sdl2
 	       ;;:cl-freetype2
-	       :png
-	       :obj-parser
+	       ;; :png
+	       ;; :obj-parser
 	       :cl-fad
 	       :rtmp-utils
 	       :varjo

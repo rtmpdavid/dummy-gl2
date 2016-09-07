@@ -78,18 +78,7 @@
   (setf *window* nil
 	*gl-context* nil))
 
-(defvar vao nil)
-
 (defun main-loop ()
-  (setf vao (gl:gen-vertex-array))
-  (gl:bind-vertex-array vao)
-  (gl:enable-vertex-attrib-array (attrib-position :pos3))
-  
-  (bind-vbo-buffer static-meshes)
-  (bind-vbo-data static-meshes)
-  (bind-ebo-buffer static-meshes)
-  (bind-ebo-data static-meshes)
-
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -111,15 +100,7 @@
 
   (use-gl-shader :trivial)
 
-  ;; (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 random-verts-0))
-  ;; (loop for i from 0 to 5000
-  ;;    do (draw-mesh random-verts-0)
-  (bind-vbo-buffer static-meshes)
-  (apply #'%gl:vertex-attrib-pointer (attrib-pointer-args :pos3 random-verts-5))
   (draw-mesh random-verts-5)
-  (draw-mesh random-verts-5)
-  (draw-mesh random-verts-5)
-  (unbind-vbo-buffer)
 
   (flush-renderer))
 

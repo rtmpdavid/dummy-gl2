@@ -32,56 +32,8 @@
   (apply #'gl:clear-color color)
   (apply #'gl:clear buffers))
 
-(defun bind-vbo-buffer (vertices)
-  (when (not (verts-vbo vertices))
-    (alloc-buffers vertices))
-  (gl:bind-buffer :array-buffer (verts-vbo vertices)))
-
-(defun bind-ebo-buffer (vertices)
-  (when (not (verts-ebo vertices))
-    (alloc-buffers vertices))
-  (gl:bind-buffer :element-array-buffer (verts-ebo vertices)))
-
-(defun bind-vbo-data (vertices &optional (usage :static-draw))
-  (when (not (verts-array vertices))
-    (alloc-vertices vertices))
-  (print (verts-array vertices))
-  (%gl:buffer-data :array-buffer
-  		   (gl:gl-array-byte-size (verts-array vertices))
-  		   (slot-value (verts-array vertices) 'gl::pointer)
-  		   usage)
-  ;; (gl:buffer-data :array-buffer usage (verts-array vertices))
-  )
-
-(defun bind-ebo-data (vertices &optional (usage :static-draw))
-  (when (not (verts-array-elts vertices))
-    (alloc-vertices vertices))
-  (%gl:buffer-data :element-array-buffer
-  		   (gl:gl-array-byte-size (verts-array-elts vertices))
-  		   (slot-value (verts-array-elts vertices) 'gl::pointer)
-  		   usage)
-  ;; (gl:buffer-data :element-array-buffer usage (verts-array-elts vertices))
-  )
-
-(defun unbind-vbo-buffer ()
-  (gl:bind-buffer :array-buffer 0))
-
-(defun unbind-ebo-buffer ()
-  (gl:bind-buffer :array-buffer 0))
-
-(defun bind-vao (mesh)
-  (let ((vao ;; (gl:gen-vertex-array)
-	  )
-	(vec-array ;; (gl:alloc-gl-array :float (length (mesh-verts)))
-	  )
-	(elt-array ;; (gl:alloc-gl-array :uint32 (length (mesh--elts)))
-	  ))
-    (loop with layout = (mesh-layout mesh)
-	  for attrib in layout
-	  do (print (attrib-pointer-args attrib layout))
-	  )))
-
 (defvar current-mesh nil)
+(defvar current-vbo nil)
 
 (defvar polygon-count 0)
 (defvar polygon-count-last 0)
@@ -91,10 +43,11 @@
   (let ((gl-array (mesh-gl-array mesh)))
     (when (not gl-array) (error "Mesh does not have gl array set"))
     (when (not (gl-array-valid-p gl-array)) (alloc-vertices gl-array))
-    (when (not (eq mesh current-mesh))
-      (setf current-mesh mesh))
+    (when (not (mesh-vao mesh))
+      (bind-vao mesh))
+    (gl:bind-vertex-array (mesh-vao mesh))
     (incf polygon-count (/ (length (mesh-elts mesh)) 3))
-    (%gl:draw-range-elements  :triangles ;
+    (%gl:draw-range-elements  :points
     			      (mesh-offset-elts mesh)
     			      (verts-length-elts gl-array)
     			      (length (mesh-elts mesh))

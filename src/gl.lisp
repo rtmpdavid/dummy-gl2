@@ -60,6 +60,9 @@
 
 (defun alloc-vertices (vertices)
   (format *standard-output* "Allocating vertices.~%")
+  (when (not (or (verts-vbo vertices)
+		 (verts-ebo vertices)))
+    (alloc-buffers vertices))
   (when (verts-array vertices) (gl:free-gl-array (verts-array vertices)))
   (when (verts-array-elts vertices) (gl:free-gl-array (verts-array-elts vertices)))
   (setf (verts-array vertices) (gl:alloc-gl-array :float (verts-length vertices))
@@ -67,17 +70,23 @@
   (loop for mesh in (verts-meshes vertices)
 	with index = 0
 	with index-elts = 0
-	;; copy vertex data
+           ;; copy vertex data
 	do (setf (mesh-offset mesh) index)
-	   (let ((vert-count (length (mesh-verts mesh))))
+	   (let ((vert-count (length (mesh-verts mesh))))	   
 	     (push-gl-array (verts-array vertices) (mesh-verts mesh) vert-count index)
 	     (incf index vert-count))
-	   ;; copy element data
 	   (setf (mesh-offset-elts mesh) index-elts)
-	   (let ((elt-count (length (mesh-elts mesh))))
+           ;; copy element data
+	   (let ((elt-count (length (mesh-elts mesh))))	     
 	     (push-gl-array (verts-array-elts vertices) (mesh-elts mesh) elt-count index-elts)
 	     (incf index-elts elt-count)))
-  (setf (gl-array-valid-p vertices) t))
+  (setf (gl-array-valid-p vertices) t)
+  (bind-ebo-buffer vertices)
+  (bind-vbo-buffer vertices)
+  (bind-ebo-data vertices)
+  (bind-vbo-data vertices)
+  (unbind-ebo-buffer)
+  (unbind-vbo-buffer))
 
 (defun free-vertices (vertices)
   (gl:free-gl-array (verts-array vertices)))
@@ -94,3 +103,43 @@
 	   collect buff))
   (setf (verts-vbo vertices) nil
 	(verts-ebo vertices) nil))
+
+(defun bind-vbo-buffer (vertices)
+  (gl:bind-buffer :array-buffer (verts-vbo vertices)))
+
+(defun bind-ebo-buffer (vertices)
+  (gl:bind-buffer :element-array-buffer (verts-ebo vertices)))
+
+(defun bind-vbo-data (vertices &optional (usage :static-draw))
+  (%gl:buffer-data :array-buffer
+  		   (gl:gl-array-byte-size (verts-array vertices))
+  		   (slot-value (verts-array vertices) 'gl::pointer)
+  		   usage))
+
+(defun bind-ebo-data (vertices &optional (usage :static-draw))
+  (%gl:buffer-data :element-array-buffer
+  		   (gl:gl-array-byte-size (verts-array-elts vertices))
+  		   (slot-value (verts-array-elts vertices) 'gl::pointer)
+  		   usage))
+
+(defun unbind-vbo-buffer ()
+  (gl:bind-buffer :array-buffer 0))
+
+(defun unbind-ebo-buffer ()
+  (gl:bind-buffer :array-buffer 0))
+
+(defun bind-vao (mesh)
+  (let ((vao (if (mesh-vao mesh) (mesh-vao mesh)
+		 (gl:gen-vertex-array))))
+    (gl:bind-vertex-array vao)
+    (bind-ebo-buffer (mesh-gl-array mesh))
+    (bind-vbo-buffer (mesh-gl-array mesh))
+    (mapcar  #'gl:enable-vertex-attrib-array 
+	     (mapcar #'attrib-position (mesh-layout mesh)))
+    (mapcar #'(lambda (args)
+		(apply #'%gl:vertex-attrib-pointer args))
+	    (mapcar #'(lambda (attrib)
+			(attrib-pointer-args attrib mesh))
+		    (mesh-layout mesh)))
+    (when (not (mesh-vao mesh))
+      (setf (mesh-vao mesh) vao))))
