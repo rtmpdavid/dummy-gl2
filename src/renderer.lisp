@@ -12,18 +12,18 @@
      (add-meshes static-meshes ,name)))
 
 (define-and-add-mesh square-2d (make-square nil nil nil))
-(define-and-add-mesh square-3d (make-square t nil nil))
-(define-and-add-mesh square-2d-tex (make-square nil nil t))
+;; (define-and-add-mesh square-3d (make-square t nil nil))
+;; (define-and-add-mesh square-2d-tex (make-square nil nil t))
 (define-and-add-mesh square-3d-tex (make-square t nil t))
-(define-and-add-mesh square-2d-cols-tex (make-square nil t t))
-(define-and-add-mesh square-3d-cols-tex (make-square t t t))
+;; (define-and-add-mesh square-2d-cols-tex (make-square nil t t))
+;; (define-and-add-mesh square-3d-cols-tex (make-square t t t))
 
-(define-and-add-mesh random-verts-0 (make-random-mesh 100))
-(define-and-add-mesh random-verts-1 (make-random-mesh 1000))
-(define-and-add-mesh random-verts-2 (make-random-mesh 10000))
-(define-and-add-mesh random-verts-3 (make-random-mesh 50000))
-(define-and-add-mesh random-verts-4 (make-random-mesh 100000))
-(define-and-add-mesh random-verts-5 (make-random-mesh 500000))
+;; (define-and-add-mesh random-verts-0 (make-random-mesh 100))
+;; (define-and-add-mesh random-verts-1 (make-random-mesh 1000))
+;; (define-and-add-mesh random-verts-2 (make-random-mesh 10000))
+;; (define-and-add-mesh random-verts-3 (make-random-mesh 50000))
+;; (define-and-add-mesh random-verts-4 (make-random-mesh 100000))
+;; (define-and-add-mesh random-verts-5 (make-random-mesh 500000))
 
 (defun init-renderer ()
   )
@@ -32,8 +32,9 @@
   (apply #'gl:clear-color color)
   (apply #'gl:clear buffers))
 
+(defconstant null-pointer (cffi:null-pointer))
+
 (defvar current-mesh nil)
-(defvar current-vbo nil)
 
 (defvar polygon-count 0)
 (defvar polygon-count-last 0)
@@ -45,32 +46,17 @@
     (when (not (gl-array-valid-p gl-array)) (alloc-vertices gl-array))
     (when (not (mesh-vao mesh))
       (bind-vao mesh))
-    (gl:bind-vertex-array (mesh-vao mesh))
+    (when (not (eq current-mesh mesh))
+      (format *standard-output* "Switching mesh~%")
+      (gl:bind-vertex-array (mesh-vao mesh))
+      (setf current-mesh mesh))
     (incf polygon-count (/ (length (mesh-elts mesh)) 3))
-    (%gl:draw-range-elements  :points
-    			      (mesh-offset-elts mesh)
-    			      (verts-length-elts gl-array)
-    			      (length (mesh-elts mesh))
-    			      :unsigned-int
-    			      (cffi:null-pointer)
-    			      ;; (slot-value (verts-array-elts gl-array) 'gl::pointer)
-    			      )
-    ;; (%gl:draw-elements :triangles
-    ;; 		       (length (mesh-elts mesh))
-    ;; 		       :unsigned-int
-    ;; 		       (cffi:incf-pointer
-    ;; 			(slot-value (verts-array-elts gl-array) 'gl::pointer)
-    ;; 			(* 4 (mesh-offset-elts mesh))
-    ;; 			)
-		       
-    ;; 		       ;; (* 4 (mesh-offset-elts mesh))
-    ;; 		       )
-    ;; (%gl:draw-elements :triangles
-    ;; 		       (length (mesh-elts mesh))
-    ;; 		       :unsigned-int
-    ;; 		       (* 4 (mesh-offset-elts mesh))
-    ;; 		       )
-
+    ;; (%gl:draw-range-elements  :triangles (mesh-offset-elts mesh)
+    ;; 			      (verts-length-elts gl-array)
+    ;; 			      (length (mesh-elts mesh))
+    ;; 			      :unsigned-int 0)
+    (%gl:draw-elements :triangles (length (mesh-elts mesh))
+    		       :unsigned-int 0)
     ))
 
 (defun flush-renderer ()

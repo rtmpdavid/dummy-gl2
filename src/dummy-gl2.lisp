@@ -26,7 +26,7 @@
 	    (gl:get-integer :major-version) (gl:get-integer :minor-version)
 	    (gl:get-string :shading-language-version))))
 
-(defun init-window (&key (title "engine-base") (w 320) (h 640) (flags '(:shown :opengl)))
+(defun init-window (&key (title "engine-base") (w 100) (h 100) (flags '(:shown :opengl)))
   (format t "Creating sdl2 window~%")
   (setf *window* (sdl2:create-window :title title :w w :h h :flags flags))
   (sdl2:gl-set-attr :context-major-version 4)
@@ -36,10 +36,10 @@
   (setf *gl-context* (sdl2:gl-create-context *window*))
   (format t "Making OpenGL context current~%")
   (sdl2:gl-make-current *window* *gl-context*)
-  (sdl2:gl-set-swap-interval 0)
+  (sdl2:gl-set-swap-interval 1)
   )
 
-(defun start-main-loop (&key (w 320) (h 640) (title "foobar"))
+(defun start-main-loop (&key (w 640) (h 480) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
@@ -83,24 +83,31 @@
     (:idle ()
 	   (update-swank)
 	   (continuable (idle-fun)))
-    (:quit () t))
-  (gl:delete-vertex-arrays (list vao)))
+    (:quit () t)))
 
 (defvar frame-count 0)
 (defvar old-time 0)
+(defvar meh 0)
+(defvar foo nil)
 
 (defun idle-fun ()
   (incf frame-count)
+  (incf meh)
   (let ((time (get-internal-real-time)))
     (when (> (- time old-time) 1000)
-      (format t "~a ~a~%" frame-count polygon-count-last)
+      (setf foo (not foo))
+      (format t "~a ~a ~a~%" frame-count polygon-count-last (/ (float (- time old-time))
+							       polygon-count-last))
       (setf frame-count 0
   	    old-time time)))
   (clear-buffers :color '(0.0 0.1 0.1 1.0))
-
-  (use-gl-shader :trivial)
-
-  (draw-mesh random-verts-5)
-
+  (use-gl-shader :trivial-texture-scaled)
+  ;; (if foo
+      ;; (use-texture texture-1 :texture0)
+  (use-texture texture-2 :texture0)
+  (shader-set-texture :trivial-texture-scaled "TEXTURE_1" 0)
+  (shader-set-float :trivial-texture-scaled "TEX_SCALE" (1+ (/ (sin (/ meh 100.0)) 2.0)))
+  (dotimes (i 1000)
+    (draw-mesh square-3d-tex))
   (flush-renderer))
 

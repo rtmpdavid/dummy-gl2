@@ -5,8 +5,8 @@
 (in-package :dummy-gl2)
 
 (defun list-attrib-positions (in-args)
-  (print (loop for arg in in-args
-	       collect (attrib-position (car arg)))))
+  (loop for arg in in-args
+	collect (attrib-position (car arg))))
 
 (defun gen-in-arg-strings (post-proc-obj)
   (with-slots (varjo::env) post-proc-obj

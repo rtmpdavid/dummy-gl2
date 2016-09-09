@@ -20,7 +20,7 @@
 	:pos3 0
 	:col3 1
 	:col4 1
-	:tex  2
+	:tex2 2
 	:nor2 3
 	:nor3 3))
 
@@ -76,27 +76,6 @@
 ;; 	(v-compile uniforms version :vertex vertex
 ;; 				    :fragment fragment)))
 
-(add-gpu-program :trivial :force-reload t
-			  :vertex '(((pos3 :vec3))
-				    (v! pos3 1.0))
-			  :fragment '(()
-				      (v! 1.0 1.0 1.0 1.0)))
-
-(add-gpu-program :trivial-color :force-reload t
-				:vertex '(((pos3 :vec3)
-					   (col3 :vec3))
-					  (v! pos3 1.0))
-				:fragment '(()
-					    (v! 1.0 1.0 1.0 1.0)))
-
-(add-gpu-program :trivial-color-uniform :force-reload t
-					:uniforms '((col3 :vec3))
-					:vertex '(((pos3 :vec3))
-						  (v! pos3 1.0))
-					:fragment '((())
-						    (v! col3 1.0)))
-
-
 (defun compile-shader (target source)
   (let ((shader (gl:create-shader target)))
     (gl:shader-source shader source)
@@ -150,3 +129,51 @@
     (when (not (shader-object-valid-p gl-shader))
       (compile-gl-shader-program gl-shader))
     (gl:use-program (shader-object gl-shader))))
+
+(defun shader-set-texture (progname name tex-num)
+  (%gl:uniform-1i (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) tex-num))
+
+(defun shader-set-float (progname name val)
+  (%gl:uniform-1f (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) val))
+
+(add-gpu-program :trivial :force-reload t
+			  :vertex '(((pos3 :vec3))
+				    (v! pos3 1.0))
+			  :fragment '(()
+				      (v! 1.0 1.0 1.0 1.0)))
+
+(add-gpu-program :trivial-color :force-reload t
+				:vertex '(((pos3 :vec3)
+					   (col3 :vec3))
+					  (v! pos3 1.0))
+				:fragment '(()
+					    (v! 1.0 1.0 1.0 1.0)))
+
+(add-gpu-program :trivial-color-uniform :force-reload t
+					:uniforms '((col3 :vec3))
+					:vertex '(((pos3 :vec3))
+						  (v! pos3 1.0))
+					:fragment '((())
+						    (v! col3 1.0)))
+
+(add-gpu-program :trivial-texture :force-reload t
+				  :uniforms '((texture-1 :sampler-2d))
+				  :vertex '(((pos3 :vec3)
+					     (tex2 :vec2))
+					    (values
+					     (v! pos3 1.0)
+					     tex2))
+				  :fragment '(((tex2 :vec2))
+					      (+ (varjo::texture texture-1 tex2))))
+
+
+(add-gpu-program :trivial-texture-scaled :force-reload t
+				  :uniforms '((texture-1 :sampler-2d)
+					      (tex-scale :float))
+				  :vertex '(((pos3 :vec3)
+					     (tex2 :vec2))
+					    (values
+					     (v! pos3 1.0)
+					     tex2))
+				  :fragment '(((tex2 :vec2))
+					      (+ (varjo::texture texture-1 (* tex2 tex-scale)))))
