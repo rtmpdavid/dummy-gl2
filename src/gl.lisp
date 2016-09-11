@@ -4,6 +4,11 @@
    :rtmp-utils))
 (in-package :dummy-gl2)
 
+(defun dump-gl-array (glarray)
+  (loop for i from 0
+	collect (gl:glaref glarray i)
+	repeat (gl::gl-array-size glarray)))
+
 (defclass gl-vertices ()
   ((gl-array
     :initform nil
@@ -34,20 +39,20 @@
   (when (find mesh (verts-meshes vertices))
     (decf (verts-length vertices) (length (mesh-verts mesh)))
     (decf (verts-length-elts vertices) (length (mesh-elts mesh)))
-    (setf (verts-meshes vertices)
-	  (delete mesh (verts-meshes vertices))
+    (when (mesh-vao mesh) (gl:delete-vertex-arrays (list (mesh-vao mesh))))
+    (setf (verts-meshes vertices) (delete mesh (verts-meshes vertices))
 	  (mesh-gl-array mesh) nil
 	  (mesh-offset mesh) 0
 	  (gl-array-valid-p vertices) nil)))
-
+ 
 (defun add-mesh (vertices mesh)
-  (unless (eq (mesh-gl-array mesh) vertices)
-    (when (mesh-gl-array mesh) (remove-mesh (mesh-gl-array mesh) mesh))
-    (setf (mesh-gl-array mesh) vertices
-	  (gl-array-valid-p vertices) nil)
-    (incf (verts-length vertices) (length (mesh-verts mesh)))
-    (incf (verts-length-elts vertices) (length (mesh-elts mesh)))
-    (push mesh (verts-meshes vertices))))
+  (when (mesh-gl-array mesh) (remove-mesh (mesh-gl-array mesh) mesh))
+  (setf (mesh-gl-array mesh) vertices
+	(gl-array-valid-p vertices) nil
+	(mesh-vao-valid-p mesh) nil)
+  (incf (verts-length vertices) (length (mesh-verts mesh)))
+  (incf (verts-length-elts vertices) (length (mesh-elts mesh)))
+  (push mesh (verts-meshes vertices)))
 
 (defun add-meshes (vertices &rest meshes)
   (dolist (mesh meshes)
@@ -59,37 +64,42 @@
 	repeat count))
 
 (defun alloc-vertices (vertices)
-  (format *standard-output* "Allocating vertices.~%")
   (when (not (or (verts-vbo vertices)
 		 (verts-ebo vertices)))
     (alloc-buffers vertices))
-  (when (verts-array vertices) (gl:free-gl-array (verts-array vertices)))
-  (when (verts-array-elts vertices) (gl:free-gl-array (verts-array-elts vertices)))
+  (free-vertices vertices)
   (setf (verts-array vertices) (gl:alloc-gl-array :float (verts-length vertices))
 	(verts-array-elts vertices) (gl:alloc-gl-array :unsigned-int (verts-length-elts vertices)))
   (loop for mesh in (verts-meshes vertices)
 	with index = 0
+	with offset = 0
 	with index-elts = 0
-           ;; copy vertex data
-	do (setf (mesh-offset mesh) index)
-	   (let ((vert-count (length (mesh-verts mesh))))	   
-	     (push-gl-array (verts-array vertices) (mesh-verts mesh) vert-count index)
-	     (incf index vert-count))
+	do (setf (mesh-offset mesh) offset)
 	   (setf (mesh-offset-elts mesh) index-elts)
-           ;; copy element data
-	   (let ((elt-count (length (mesh-elts mesh))))	     
+	   (let ((vert-count (length (mesh-verts mesh))))
+	     ;; copy vertex data
+	     (push-gl-array (verts-array vertices) (mesh-verts mesh) vert-count index)
+	     (incf index vert-count)
+	     (incf offset (length (mesh-verts mesh))))
+	   (let ((elt-count (length (mesh-elts mesh))))
+	     ;; copy element data
 	     (push-gl-array (verts-array-elts vertices) (mesh-elts mesh) elt-count index-elts)
 	     (incf index-elts elt-count)))
   (setf (gl-array-valid-p vertices) t)
   (bind-ebo-buffer vertices)
-  (bind-vbo-buffer vertices)
   (bind-ebo-data vertices)
-  (bind-vbo-data vertices)
   (unbind-ebo-buffer)
+  (bind-vbo-buffer vertices)
+  (bind-vbo-data vertices)
   (unbind-vbo-buffer))
 
 (defun free-vertices (vertices)
-  (gl:free-gl-array (verts-array vertices)))
+  (when (verts-array vertices)
+    (gl:free-gl-array (verts-array vertices)))
+  (when (verts-array-elts vertices)
+    (gl:free-gl-array (verts-array-elts vertices)))
+  (setf (verts-array vertices) nil
+	(verts-array-elts vertices) nil))
 
 (defun alloc-buffers (vertices)
   (let ((buffers (gl:gen-buffers 2)))
@@ -126,7 +136,7 @@
   (gl:bind-buffer :array-buffer 0))
 
 (defun unbind-ebo-buffer ()
-  (gl:bind-buffer :array-buffer 0))
+  (gl:bind-buffer :element-array-buffer 0))
 
 (defun bind-vao (mesh)
   (let ((vao (if (mesh-vao mesh) (mesh-vao mesh)
@@ -135,11 +145,16 @@
     (bind-ebo-buffer (mesh-gl-array mesh))
     (bind-vbo-buffer (mesh-gl-array mesh))
     (mapcar  #'gl:enable-vertex-attrib-array 
-	     (mapcar #'attrib-position (mesh-layout mesh)))
+	     (mapcar #'attrib-position  (mesh-layout mesh)))
     (mapcar #'(lambda (args)
 		(apply #'%gl:vertex-attrib-pointer args))
 	    (mapcar #'(lambda (attrib)
 			(attrib-pointer-args attrib mesh))
 		    (mesh-layout mesh)))
     (when (not (mesh-vao mesh))
-      (setf (mesh-vao mesh) vao))))
+      (setf (mesh-vao mesh) vao
+	    (mesh-vao-valid-p mesh) t)))
+  (gl:bind-vertex-array 0)
+  (unbind-vbo-buffer)
+  (unbind-ebo-buffer))
+
