@@ -5,16 +5,15 @@
 (in-package :dummy-gl2)
 
 (defun make-checker-pattern (size &key (color-b '(255 255 255)) (color-f '(0 0 0)))
-  (let ((pattern (make-array (list (* 2 size) (* 2 size) 3))))
-    (loop for j from 0 to (1- (* 2 size))
-	  do (loop for i from 0 to (1- (* 2 size))
-		   with color
-		   if (zerop (logxor (truncate i size) (truncate j size)))
-		     do (setf color color-b)
-		   else
-		     do (setf color color-f)
-		   do (loop for k from 0 to 2
-			    do (setf (aref pattern j i k) (elt color k)))))
+  (let ((pattern (make-array (list (* 2 size) (* 2 size) 3)))
+	(color))
+    (dotimes (j (* 2 size))
+      (dotimes (i (* 2 size))
+	(if (zerop (logxor (truncate i size) (truncate j size)))
+	    (setf color color-b)
+	    (setf color color-f))
+	(dotimes (k 2)
+	  (setf (aref pattern j i k) (elt color k)))))
     (list
      :data pattern
      :format :rgb
@@ -22,7 +21,7 @@
      :height (* size 2))))
 
 (defstruct (gl-texture (:conc-name tex-)
-		    (:constructor make-tex))
+		       (:constructor make-tex))
   (gl-object nil)
   (gl-object-valid nil)
   (pixels nil)
@@ -40,37 +39,44 @@
     (:rgba 4)
     (t (error (format nil "Format ~a not supported" format)))))
 
-(defun set-texture-image (texture image)
+(defun create-texture-data (texture)
   (when (tex-pixels texture) (gl:free-gl-array (tex-pixels texture)))
-  (setf (tex-width texture) (getf image :width)
-	(tex-height texture) (getf image :height)
-	(tex-gl-object-valid texture) nil)
-  (let ((pixels  (gl:alloc-gl-array :unsigned-char (* (texel-size (tex-pixel-format texture))
-						      (getf image :width)
-						      (getf image :height)))))
-    (loop for y from 0 to (1- (tex-height texture))
-	  do (loop for x from 0 to (1- (tex-width texture))
-		   do (loop for i from 0
-			    while (< i (texel-size (getf image :format)))
-			    do (setf (gl:glaref pixels (+ i
-							  (* x (texel-size (tex-pixel-format texture)))
-							  (* y (* (tex-width texture)
-								  (texel-size (tex-pixel-format texture))))))
-				     (if (< i (texel-size (tex-pixel-format texture)))
-					 (aref (getf image :data) y x i)
-					 1.0)))))
-    (setf (tex-pixels texture) pixels)))
+  (setf (tex-gl-object-valid texture) nil
+	(tex-pixels texture) (gl:alloc-gl-array :unsigned-char (* (texel-size (tex-pixel-format texture))
+								  (tex-width texture)
+								  (tex-height texture)))))
 
-(defun make-texture (image &key (format :rgb)
-			     (wrap-s :clamp-to-edge)
-			     (wrap-t :clamp-to-edge)
-			     (min-filter :linear)
-			     (mag-filter :linear))
+(defun set-texture-image (texture image)
+  (let ((width (getf image :width))
+	(height (getf image :height))
+	(format (texel-size (tex-pixel-format texture))))
+    (setf (tex-gl-object-valid texture) nil)
+    (when (or (/= (tex-width texture) width)
+	      (/= (tex-height texture) height))
+      (setf (tex-width texture) width
+	    (tex-height texture) height)
+      (create-texture-data texture))
+    (dotimes (y height)
+      (dotimes (x width)
+	(loop for i from 0
+	      while (< i (texel-size (getf image :format)))
+	      do (setf (gl:glaref (tex-pixels texture) (+ i (* x format) (* y (* width format))))
+		       (if (>= i format) 1.0
+			   (aref (getf image :data) y x i))))))))
+
+(defun make-texture (&key (image) (size) (format :rgb)
+		       (wrap-s :clamp-to-edge) (wrap-t :clamp-to-edge)
+		       (min-filter :linear) (mag-filter :linear))
+  (when (or (and image size) (not (or image size)))
+    (error "Texture should be created with either image or size, not both"))
   (let ((texture (make-tex :pixel-format format
 			   :wrap-s wrap-s :wrap-t wrap-t
 			   :min-filter min-filter :mag-filter mag-filter)))
-    (set-texture-image texture image)
-    texture))
+    (prog1 texture
+      (if image (set-texture-image texture image)
+	  (setf (tex-width texture) (elt size 0)
+		(tex-height texture) (elt size 1)
+		(tex-pixels texture) (gl:make-null-gl-array :float))))))
 
 (defun use-texture (texture texture-unit)
   (if (not (tex-gl-object texture))
@@ -97,14 +103,22 @@
 		    (slot-value (tex-pixels texture) 'gl::pointer))
   (setf (tex-gl-object-valid texture) t))
 
-(defvar texture-1 (make-texture (make-checker-pattern 500 :color-b '(128 128 128)
-							  :color-f '(64 64 64))))
-(defvar texture-2 (make-texture (make-checker-pattern 10 :color-b '(255 0 0)
-							  :color-f '(0 255 0))
+(defun free-texture-data (texture)
+  (when (tex-gl-object texture)
+   (gl:delete-textures (list (tex-gl-object texture)))
+   (setf (tex-gl-object texture) nil
+	 (tex-gl-object-valid texture) nil)))
+
+(defvar texture-1 (make-texture :image (make-checker-pattern 500 :color-b '(128 128 128)
+								 :color-f '(64 64 64))))
+(defvar texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
+							 :color-f '(0 255 0))
 				:min-filter :linear
 				:mag-filter :linear
 				:wrap-s :clamp-to-edge
 				:wrap-t :clamp-to-edge))
+
+(defvar texture-3 (make-texture :size '(10000 10000)))
 
 
 ;; (defvar textures (make-hash-table))
