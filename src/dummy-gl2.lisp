@@ -36,16 +36,15 @@
   (setf *gl-context* (sdl2:gl-create-context *window*))
   (format t "Making OpenGL context current~%")
   (sdl2:gl-make-current *window* *gl-context*)
-  (sdl2:gl-set-swap-interval 0)
-  )
+  (sdl2:gl-set-swap-interval 1))
 
-(defun start-main-loop (&key (w 1680) (h 1050) (title "foobar"))
+(defun start-main-loop (&key (w 840) (h 1050) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
 	     (format t "Initializing sdl2~%")
 	     (sdl2:init :everything)
-	     (unwind-protect		      
+	     (unwind-protect 
 		  (sdl2:in-main-thread ()
 		    (init-window :w w :h h :title title)
 		    (init-renderer)
@@ -95,7 +94,7 @@
 ;; (defvar ndir 1)
 
 (defun idle-fun ()
-  (incf bar 0.0001)
+  (incf bar 0.001)
   (incf frame-count)
   (incf meh)
   (let ((time (get-internal-real-time)))
@@ -107,9 +106,15 @@
   	    old-time time)))
   (clear-buffers :color '(0.0 0.1 0.1 1.0))
 
-  (use-gl-shader :trivial-texture)
-  (use-texture texture-2 :texture0)
-  (shader-set-texture :trivial-texture-scaled "TEXTURE_1" 0)
+  (use-gl-shader :trivial-texture-model)
+  (use-texture texture-1 :texture0)
+  (shader-set-uniform :trivial-texture-model 'texture-1 0)
+  (shader-set-uniform :trivial-texture-model 'model
+		      (rtg-math.matrix4:* 
+		       (rtg-math.matrix4:rotation-z bar)
+		       (rtg-math.matrix4:*
+			(rtg-math.matrix4:translation (v! -1.0 -1.0 1.0))
+			(rtg-math.matrix4:scale (v! 2.0 2.0 1.0)))))
   ;; (gl:polygon-mode :front-and-back :line)
   (gl:polygon-mode :front-and-back :fill)
   (draw-mesh circle)

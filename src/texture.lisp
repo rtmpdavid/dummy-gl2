@@ -97,8 +97,8 @@
 		    (slot-value (tex-pixels texture) 'gl::pointer))
   (setf (tex-gl-object-valid texture) t))
 
-(defvar texture-1 (make-texture (make-checker-pattern 500 :color-b '(0 255 0)
-							  :color-f '(255 0 0))))
+(defvar texture-1 (make-texture (make-checker-pattern 500 :color-b '(128 128 128)
+							  :color-f '(64 64 64))))
 (defvar texture-2 (make-texture (make-checker-pattern 10 :color-b '(255 0 0)
 							  :color-f '(0 255 0))
 				:min-filter :linear

@@ -16,7 +16,7 @@
        (add-meshes static-meshes ,name))))
 
 (define-and-add-mesh square-3d-tex (make-square t nil t))
-(define-and-add-mesh circle (make-n-gon 1000))
+(define-and-add-mesh circle (make-n-gon 500))
 
 (defun init-renderer ()
   )

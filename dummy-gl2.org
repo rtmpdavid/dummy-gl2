@@ -1,0 +1,14 @@
+DummyGL 2 development log thing
+
+<2016-09-08 Thu> Textures
+Got textures working, note to self: Next time you work with OpenGL textures don't forget to set texture parameters, they will not work otherwise. 
+Also gl-vertices/meshes do not regenerate correctly when something new is added, investigate.
+
+[2016-09-09 Fri] The GPU Fill Rate did it
+It appears that the performance drop related to polygon drawing was not in fact limited by GPU fill rate rather than me trying to push too much draw calls/polygons.
+If that is actually true, a number optimizations become meaningful (like polygon culling) and the engine could be relatively well performing after all.
+This would also explain the fact that the performance drop was non-linear.
+
+<2016-09-11 Sun> Figured out why multiple meshes were not drawing properly
+Meshes were not drawing properly because I did not specify element offset when drawing them.
+Also I did something for generic uniform setting, I don't quite like it so I should figure out a better way

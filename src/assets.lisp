@@ -45,15 +45,10 @@
 
 (defun load-png (filename)
   (with-open-file (img (absolute-asset-name filename) :element-type '(unsigned-byte 8))
-    ;; (let ((img (png:decode img :preserve-alpha t)))
-    ;;   img
-    ;;   ;; (list :width (array-dimension img 1)
-    ;;   ;; 	    :height (array-dimension img 0)
-    ;;   ;; 	    :data (make-array (reduce #'* (array-dimensions img) :initial-value 1)
-    ;;   ;; 			      :element-type (array-element-type img)
-    ;;   ;; 			      :displaced-to img))
-    ;;   )
-    ))
+    (let ((img (png:decode img :preserve-alpha t)))
+      (list :width (array-dimension img 1)
+      	    :height (array-dimension img 0)
+      	    :data img))))
 
 (defun %load-asset-switch (filename)
   (if (null (pathname-type filename))

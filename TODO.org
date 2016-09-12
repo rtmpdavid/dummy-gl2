@@ -1,0 +1,4 @@
+* TODO Figure out how to link this file with dummy-gl2.org
+* DONE Fix vertices/meshes gl object regeneration
+* DONE Check if performance issues are really related to gpu fill rate (yep, it was fill rate)
+
