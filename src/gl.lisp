@@ -1,6 +1,7 @@
 (in-package :cl-user)
 (defpackage dummy-gl2
-  (:use :cl
+  (:use
+   :cl
    :rtmp-utils))
 (in-package :dummy-gl2)
 

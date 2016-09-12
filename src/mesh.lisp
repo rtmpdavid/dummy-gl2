@@ -119,9 +119,9 @@
     (setf (mesh-elts mesh) (make-array (length elts) :element-type 'fixnum :initial-contents elts))
     (loop for i from 0
 	  for phi = (+ (* i (/ (* 2 pi) n-vertices)) offset-phi)
-	  for x = (coerce (/ (1+ (sin phi)) 2) 'single-float)
-	  for y = (coerce (/ (1+ (cos phi)) 2) 'single-float)
-	  do (mesh-set-vert mesh i :pos3 (list x y 0.0)
-				   :tex2 (list x y))
+	  for pos-x = (coerce (/ (1+ (sin phi)) 2) 'single-float)
+	  for pos-y = (coerce (/ (1+ (cos phi)) 2) 'single-float)
+	  do (mesh-set-vert mesh i :pos3 (list pos-x pos-y 0.0)
+				   :tex2 (list pos-x pos-y))
 	  repeat n-vertices)
     mesh))

@@ -1,19 +1,11 @@
 (in-package :cl-user)
-(defpackage dummy-gl2
+(defpackage dummy-gl2.shader
   (:use #:cl
 	#:rtmp-utils
 	#:alexandria
 	#:varjo
 	#:rtg-math))
-(in-package :dummy-gl2)
-
-;; (v-compile '((a :float)) :330
-;; 	   :vertex '(((pos :vec3))
-;; 		     (values (v! pos 1.0) a))
-;; 	   :fragment '(((hmm :float))
-;; 		       (labels ((fun ((x :float))
-;; 				  (* x x)))
-;; 			 (v! 1.0 1.0 hmm (fun
+(in-package :dummy-gl2.shader)
 
 (defparameter attrib-positions
   (list :pos2 0
@@ -75,7 +67,7 @@
 				     :stage-vert (result-stage :vertex)
 				     :stage-frag (result-stage :fragment))))
 	    (loop for u in uniforms
-		  do (setf (gethash (first u) (shader-uniforms (gethash name gl-shaders)))
+		  do (setf (gethash (intern (symbol-name (first u)) "KEYWORD") (shader-uniforms (gethash name gl-shaders)))
 			   (make-uniform :type (second u)))))))
     (cancel () :report "Get current value"
       (get-gl-shader name))))
@@ -158,8 +150,9 @@
 	    	  (gl:get-uniform-location (shader-object shader)
 	    				   (varjo::safe-glsl-name-string uniform-name))))
 	  (set-uniform-values uniform values))
-	(warn (format nil "Shader ~a has no uniform named ~a"
-		      shader-name uniform-name)))))
+	;; (warn (format nil "Shader ~a has no uniform named ~a"
+	;; 	      shader-name uniform-name))
+	)))
 
 (defun shader-set-texture (progname name tex-num)
   (%gl:uniform-1i (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) tex-num))
@@ -188,3 +181,8 @@
 			    tex2))
 		 :fragment '(((tex2 :vec2))
 			     (+ (varjo::texture texture-1 tex2))))
+
+
+
+
+

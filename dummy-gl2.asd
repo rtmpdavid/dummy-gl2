@@ -20,14 +20,14 @@
 	       (:file "package")
 	       (:module "src"
 		:components ((:file "bits")
+			     (:file "dummy-gl2")
 			     (:file "assets")
 			     (:file "mesh")
-			     (:file "gl")
 			     (:file "texture")
 			     (:file "shader-compiler")
 			     (:file "shader")
-			     (:file "renderer")
-			     (:file "dummy-gl2")))
+			     (:file "gl")
+			     (:file "renderer")))
 	       (:module "tools"
 		:components (;; (:file "sprite")
 			     ;; (:file "mesh")

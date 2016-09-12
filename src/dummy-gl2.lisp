@@ -38,7 +38,7 @@
   (sdl2:gl-make-current *window* *gl-context*)
   (sdl2:gl-set-swap-interval 1))
 
-(defun start-main-loop (&key (w 840) (h 1050) (title "foobar"))
+(defun start-main-loop (&key (w 500) (h 500) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
@@ -107,9 +107,9 @@
   (clear-buffers :color '(0.0 0.1 0.1 1.0))
 
   (use-gl-shader :trivial-texture-model)
-  (use-texture texture-1 :texture0)
-  (shader-set-uniform :trivial-texture-model 'texture-1 0)
-  (shader-set-uniform :trivial-texture-model 'model
+  (use-texture texture-2 :texture0)
+  (shader-set-uniform :trivial-texture-model :texture-1 0)
+  (shader-set-uniform :trivial-texture-model :model
 		      (rtg-math.matrix4:* 
 		       (rtg-math.matrix4:rotation-z bar)
 		       (rtg-math.matrix4:*
