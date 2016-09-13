@@ -40,27 +40,43 @@
 (defstruct (gl-framebuffer (:conc-name framebuffer-))
   (gl-object nil)
   (gl-object-valid-p nil)
+  (size nil)
   (multisample)
   (color-attachment nil)
-  (depth-attachment nil)
-  (stencil-attachment nil))
+  (depth-stencil-attachment nil)
+  (stencil-p nil))
 
-(defun make-framebuffer (color &key (samples nil) (depth nil depth-p) (stencil nil stencil-p))
-  (let* ((width (tex-width color))
-	 (height (tex-height color)))
-    (make-gl-framebuffer
-     :multisample samples
-     :color-attachment color
-     :depth-attachment
-     (if depth-p depth
-	 (make-gl-renderbuffer :format :depth-component24
-			       :samples samples
-			       :width width :height height))
-     :stencil-attachment
-     (if stencil-p stencil
-	 (make-gl-renderbuffer :format :stencil-index8
-			       :samples samples
-			       :width width :height height)))))
+(defun make-framebuffer (&key
+			   (color nil color-p)
+			   (color-size nil)
+			   (samples nil)
+			   (depth-stencil nil depth-stencil-p)
+			   (stencil nil)
+			   (depth-stencil-size color-size ds-size-p))
+  (when (and (not ds-size-p) (not depth-stencil-p) color-p)
+    (if (gl-texture-p color)
+	(setf depth-stencil-size (list (tex-width color) (tex-height color)))
+	(setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color)))))
+  (let ((fb (make-gl-framebuffer
+	     :multisample samples
+	     :color-attachment
+	     (if color-p color
+		 (make-gl-renderbuffer :width (elt color-size 0)
+				       :height (elt color-size 1)
+				       :format :rgba
+				       :samples samples))
+	     :depth-stencil-attachment
+	     (if depth-stencil-p depth-stencil
+		 (make-gl-renderbuffer :format (if stencil :depth24-stencil8
+						   :depth-component24)
+				       :samples samples
+				       :width (elt depth-stencil-size 0)
+				       :height (elt depth-stencil-size 1))))))
+    (setf (framebuffer-size fb)
+	  (if (gl-texture-p color)
+	      (setf depth-stencil-size (list (tex-width color) (tex-height color)))
+	      (setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color)))))
+    fb))
 
 (defun attach-texture (fb tex attachment)
   (use-texture tex :texture0 (if (framebuffer-multisample fb)
@@ -90,10 +106,13 @@
   (when (not (framebuffer-gl-object fb))
     (setf (framebuffer-gl-object fb) (gl:gen-framebuffer)))
   (gl::bind-framebuffer target (framebuffer-gl-object fb))
+  (apply #'gl:viewport (append (list 0 0) (framebuffer-size fb)))
   (when (not (framebuffer-gl-object-valid-p fb))
     (attach-to-framebuffer fb :color-attachment0 (framebuffer-color-attachment fb))
-    (attach-to-framebuffer fb :depth-attachment (framebuffer-depth-attachment fb))
-    (attach-to-framebuffer fb :stencil-attachment (framebuffer-stencil-attachment fb))
+    (attach-to-framebuffer fb (if (framebuffer-stencil-p fb)
+				  :depth-stencil-attachment
+				  :depth-attachment)
+			   (framebuffer-depth-stencil-attachment fb))
     (case (gl:check-framebuffer-status :framebuffer)
       (:framebuffer-unsupported (warn "Framebuffer unsopported"))
       (:framebuffer-incomplete-attachment (warn "Framebuffer attachment incomplete"))
@@ -105,5 +124,24 @@
     (setf (framebuffer-gl-object-valid-p fb) t)))
 
 (defun unbind-framebuffer ()
-  (gl:bind-framebuffer :framebuffer 0))
+  (gl:bind-framebuffer :framebuffer 0)
+  (apply #'gl:viewport (append (list 0 0) *window-size*)))
 
+(defun blit-framebuffer (fb-src &key (fb-dest 0) (filter :nearest))
+  (if (gl-framebuffer-p fb-src) (bind-framebuffer fb-src :read-framebuffer)
+      (gl:bind-framebuffer :read-framebuffer fb-src))
+  (if (gl-framebuffer-p fb-dest) (bind-framebuffer fb-dest :draw-framebuffer)
+      (gl:bind-framebuffer :draw-framebuffer fb-dest))
+  (apply #'%gl:blit-framebuffer
+	 (append '(0 0)
+		 (if (gl-framebuffer-p fb-src)
+		     (framebuffer-size fb-src)
+		     *window-size*)
+		 '(0 0)
+		 (if (gl-framebuffer-p fb-dest)
+		     (framebuffer-size fb-dest)
+		     *window-size*)
+		 (list :color-buffer-bit
+		       filter)))
+  (gl:bind-framebuffer :draw-framebuffer 0)
+  (gl:bind-framebuffer :read-framebuffer 0))
