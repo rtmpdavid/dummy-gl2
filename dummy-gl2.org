@@ -12,3 +12,8 @@ This would also explain the fact that the performance drop was non-linear.
 <2016-09-11 Sun> Figured out why multiple meshes were not drawing properly
 Meshes were not drawing properly because I did not specify element offset when drawing them.
 Also I did something for generic uniform setting, I don't quite like it so I should figure out a better way
+
+<2016-09-13 Tue> Framebuffers require some things, apparently
+When you use multisampling, everything should use multisampling.
+If you use multisampling blitting should use the size of the target framebuffer, not sure if source buffer should be of that size
+One must reset viewport if framebuffer sizes do not match, that is kinda obvious in retrospect

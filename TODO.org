@@ -6,5 +6,14 @@
 ** Add render lock to all the things that could be modified interactively
 ** Don't forget to minimize time spent locked
 * TODO Invalidvalue for delete program on shader reload
-
-
+* TODO Do something about the possibility of multiple fragment data locations in shaders and framebuffer
+* TODO Implement all the basic shaders and transformation matrices for them
+** 3d
+*** Perspective matrix
+*** Basic model-view-projection
+** 2d 
+*** Orthogonal projection matrix
+*** Basic model-view-projection
+** 
+* TODO GL object struct definition macro
+Most gl object structs I use tend to follow the same pattern, to some extend I do not want to use classes with inheritance(why?) so I should make a macro or something
