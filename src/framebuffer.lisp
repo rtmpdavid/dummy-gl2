@@ -13,7 +13,7 @@
 ;; (gl:gen-renderbuffers )
 (defstruct (gl-renderbuffer (:conc-name renderbuffer-))
   (gl-object nil)
-  (storage-bound-p nil)
+  (gl-object-valid-p nil)
   (samples nil)
   (format nil)
   (width 0)
@@ -24,7 +24,7 @@
     (setf (renderbuffer-gl-object rb) (gl:gen-renderbuffer)))
   (gl:bind-renderbuffer :renderbuffer (renderbuffer-gl-object rb))
   (when (or realloc-storage
-	    (not (renderbuffer-storage-bound-p rb)))
+	    (not (renderbuffer-gl-object-valid-p rb)))
     (if (renderbuffer-samples rb)
 	(%gl:renderbuffer-storage-multisample
 	 :renderbuffer (renderbuffer-samples rb)
@@ -36,6 +36,11 @@
 	 (renderbuffer-format rb)
 	 (renderbuffer-width rb)
 	 (renderbuffer-height rb)))))
+
+(defun set-renderbuffer-size (rb width height)
+  (setf (renderbuffer-width rb) width
+	(renderbuffer-height rb) height
+	(renderbuffer-gl-object-valid-p rb) nil))
 
 (defstruct (gl-framebuffer (:conc-name framebuffer-))
   (gl-object nil)
@@ -145,3 +150,14 @@
 		       filter)))
   (gl:bind-framebuffer :draw-framebuffer 0)
   (gl:bind-framebuffer :read-framebuffer 0))
+
+(defun set-attachment-size (attachment width height)
+  (when attachment
+   (if (gl-texture-p attachment) (set-texture-size attachment width height)
+       (set-renderbuffer-size attachment width height))))
+
+(defun set-framebuffer-size (fb width height)
+  (set-attachment-size (framebuffer-color-attachment fb) width height)
+  (set-attachment-size (framebuffer-depth-stencil-attachment fb) width height)
+  (setf (framebuffer-size fb) (list width height)
+	(framebuffer-gl-object-valid-p fb) nil))

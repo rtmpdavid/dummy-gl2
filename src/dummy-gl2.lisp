@@ -113,6 +113,7 @@
       (setf frame-count 0
   	    old-time time)))
 
+  (set-framebuffer-size fb 8 8)
   (bind-framebuffer fb)
   (clear-buffers :color '(0.30 0.2 0.2 1.0))
   (use-gl-shader :trivial-texture-model)

@@ -124,6 +124,11 @@
    (setf (tex-gl-object texture) nil
 	 (tex-gl-object-valid texture) nil)))
 
+(defun set-texture-size (tex width height)
+  (free-texture-data tex)
+  (setf (tex-width tex) width
+	(tex-height tex) height))
+
 (defvar texture-1 (make-texture :image (make-checker-pattern 500 :color-b '(128 128 128)
 								 :color-f '(64 64 64))))
 (defvar texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
