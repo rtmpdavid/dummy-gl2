@@ -16,7 +16,7 @@
        (add-meshes static-meshes ,name))))
 
 (define-and-add-mesh square-3d-tex (make-square t nil t))
-(define-and-add-mesh circle (make-n-gon 500))
+(define-and-add-mesh circle (make-n-gon 50))
 
 (defun init-renderer ()
   )
@@ -25,8 +25,12 @@
   (apply #'gl:clear-color color)
   (apply #'gl:clear buffers))
 
+(defstruct opengl-state
+  (mesh nil :type 'mesh)
+  (shader nil :type 'gl-shader)
+  )
+
 (defvar current-mesh nil)
-(defvar current-vbo nil)
 
 (defvar polygon-count 0)
 (defvar polygon-count-last 0)

@@ -38,7 +38,7 @@
   (sdl2:gl-make-current *window* *gl-context*)
   (sdl2:gl-set-swap-interval 1))
 
-(defun start-main-loop (&key (w 500) (h 500) (title "foobar"))
+(defun start-main-loop (&key (w 1000) (h 1000) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
@@ -77,7 +77,12 @@
   (setf *window* nil
 	*gl-context* nil))
 
+(defvar fb nil)
+
 (defun main-loop ()
+  (setf fb (make-framebuffer (make-texture :size '(2000 2000)
+					   :internal-format :rgba)
+			     :samples 8))
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -104,10 +109,13 @@
       							       polygon-count-last))
       (setf frame-count 0
   	    old-time time)))
-  (clear-buffers :color '(0.0 0.1 0.1 1.0))
+
+  (bind-framebuffer fb)
+  (gl:clear :color-buffer-bit)
 
   (use-gl-shader :trivial-texture-model)
-  (use-texture texture-2 :texture0)
+  (use-texture texture-1 :texture0)
+
   (shader-set-uniform :trivial-texture-model :texture-1 0)
   (shader-set-uniform :trivial-texture-model :model
 		      (rtg-math.matrix4:* 
@@ -115,8 +123,22 @@
 		       (rtg-math.matrix4:*
 			(rtg-math.matrix4:translation (v! -1.0 -1.0 1.0))
 			(rtg-math.matrix4:scale (v! 2.0 2.0 1.0)))))
-  ;; (gl:polygon-mode :front-and-back :line)
-  (gl:polygon-mode :front-and-back :fill)
+  (gl:polygon-mode :front-and-back :line)
+  ;; (gl:polygon-mode :front-and-back :fill)
   (draw-mesh circle)
+
+  (unbind-framebuffer)
+
+  (bind-framebuffer fb :read-framebuffer)
+  (gl:bind-framebuffer :draw-framebuffer 0)
+
+  (%gl:blit-framebuffer 0 0 1000 1000 0 0 1000 1000 :color-buffer-bit :nearest)
+  
+  ;; (use-gl-shader :trivial-texture)
+  ;; (use-texture (framebuffer-color-attachment fb) :texture0)
+  ;; (draw-mesh square-3d-tex)
+
+  (gl:bind-framebuffer :draw-framebuffer 0)
+  (gl:bind-framebuffer :read-framebuffer 0)
   (flush-renderer))
 

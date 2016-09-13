@@ -26,6 +26,7 @@
   (gl-object-valid nil)
   (pixels nil)
   (pixel-format nil)
+  (internal-format :rgb)
   (width 0)
   (height 0)
   (wrap-s :clamp-to-edge)
@@ -64,12 +65,14 @@
 		       (if (>= i format) 1.0
 			   (aref (getf image :data) y x i))))))))
 
-(defun make-texture (&key (image) (size) (format :rgb)
+(defun make-texture (&key (image) (size)
+		       (format :rgb)
+		       (internal-format :rgb)
 		       (wrap-s :clamp-to-edge) (wrap-t :clamp-to-edge)
 		       (min-filter :linear) (mag-filter :linear))
   (when (or (and image size) (not (or image size)))
     (error "Texture should be created with either image or size, not both"))
-  (let ((texture (make-tex :pixel-format format
+  (let ((texture (make-tex :pixel-format format :internal-format internal-format
 			   :wrap-s wrap-s :wrap-t wrap-t
 			   :min-filter min-filter :mag-filter mag-filter)))
     (prog1 texture
@@ -78,29 +81,41 @@
 		(tex-height texture) (elt size 1)
 		(tex-pixels texture) (gl:make-null-gl-array :float))))))
 
-(defun use-texture (texture texture-unit)
+(defun use-texture (texture texture-unit &optional (target :texture-2d)
+					   (n-samples 1))
   (if (not (tex-gl-object texture))
       (progn (setf (tex-gl-object texture) (gl:gen-texture))
-	     (bind-gl-texture texture texture-unit)
-	     (gl:tex-parameter :texture-2d :texture-wrap-s (tex-wrap-s texture))
-	     (gl:tex-parameter :texture-2d :texture-wrap-t (tex-wrap-t texture))
-	     (gl:tex-parameter :texture-2d :texture-min-filter (tex-min-filter texture))
-	     (gl:tex-parameter :texture-2d :texture-mag-filter (tex-mag-filter texture)))
-      (bind-gl-texture texture texture-unit))
+	     (bind-gl-texture texture texture-unit target)
+	     (when (not (eq target :texture-2d-multisample))
+	      ;; (gl:tex-parameter target :texture-wrap-s (tex-wrap-s texture))
+	      ;; (gl:tex-parameter target :texture-wrap-t (tex-wrap-t texture))
+	      (gl:tex-parameter target :texture-min-filter (tex-min-filter texture))
+	      (gl:tex-parameter target :texture-mag-filter (tex-mag-filter texture))))
+      (bind-gl-texture texture texture-unit target))
   (when (not (tex-gl-object-valid texture))
-    (set-texture-data texture)))
+    (if (eq target :texture-2d-multisample)
+	(set-texture-multisample texture target n-samples)
+	(set-texture-data texture target))))
 
-(defun bind-gl-texture (texture texture-unit)
+(defun bind-gl-texture (texture texture-unit target)
   (gl:active-texture texture-unit)
-  (gl:bind-texture :texture-2d (tex-gl-object texture)))
+  (gl:bind-texture target (tex-gl-object texture)))
 
-(defun set-texture-data (texture)
-  (%gl:tex-image-2d :texture-2d 0
-		    (gl::internal-format->int :rgb)
+(defun set-texture-data (texture target)
+  (%gl:tex-image-2d target 0
+		    (gl::internal-format->int (tex-internal-format texture))
 		    (tex-width texture) (tex-height texture)
 		    0 (tex-pixel-format texture)
 		    :unsigned-byte
 		    (slot-value (tex-pixels texture) 'gl::pointer))
+  (setf (tex-gl-object-valid texture) t))
+
+(defun set-texture-multisample (texture target n-samples)
+  (%gl:tex-image-2d-multisample
+   target n-samples
+   (gl::internal-format->int (tex-internal-format texture))
+   (tex-width texture) (tex-height texture)
+   :false)
   (setf (tex-gl-object-valid texture) t))
 
 (defun free-texture-data (texture)

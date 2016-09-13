@@ -7,15 +7,15 @@
   :depends-on (:iterate
 		:alexandria
 		:bordeaux-threads
-	       :cl-opengl
-	       :sdl2
-	       ;;:cl-freetype2
-	       :png
-	       :obj-parser
-	       :cl-fad
-	       :rtmp-utils
-	       :varjo
-	       :rtg-math)
+		:cl-opengl
+		:sdl2
+		;;:cl-freetype2
+		:png
+		:obj-parser
+		:cl-fad
+		:rtmp-utils
+		:varjo
+		:rtg-math)
   :components ((:file "config")
 	       (:file "package")
 	       (:module "src"
@@ -26,6 +26,7 @@
 			     (:file "texture")
 			     (:file "shader-compiler")
 			     (:file "shader")
+			     (:file "framebuffer")
 			     (:file "gl")
 			     (:file "renderer")))
 	       (:module "tools"

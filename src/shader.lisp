@@ -160,16 +160,6 @@
 (defun shader-set-float (progname name val)
   (%gl:uniform-1f (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) val))
 
-(add-gpu-program :trivial-texture :force-reload t
-				  :uniforms '((texture-1 :sampler-2d))
-				  :vertex '(((pos3 :vec3)
-					     (tex2 :vec2))
-					    (values
-					     (v! pos3 1.0)
-					     tex2))
-				  :fragment '(((tex2 :vec2))
-					      (+ (varjo::texture texture-1 tex2))))
-
 (add-gpu-program :trivial-texture-model
 		 :force-reload t    
 		 :uniforms '((texture-1 :sampler-2d)
