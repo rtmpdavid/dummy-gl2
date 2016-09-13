@@ -87,8 +87,8 @@
       (progn (setf (tex-gl-object texture) (gl:gen-texture))
 	     (bind-gl-texture texture texture-unit target)
 	     (when (not (eq target :texture-2d-multisample))
-	      ;; (gl:tex-parameter target :texture-wrap-s (tex-wrap-s texture))
-	      ;; (gl:tex-parameter target :texture-wrap-t (tex-wrap-t texture))
+	      (gl:tex-parameter target :texture-wrap-s (tex-wrap-s texture))
+	      (gl:tex-parameter target :texture-wrap-t (tex-wrap-t texture))
 	      (gl:tex-parameter target :texture-min-filter (tex-min-filter texture))
 	      (gl:tex-parameter target :texture-mag-filter (tex-mag-filter texture))))
       (bind-gl-texture texture texture-unit target))
@@ -123,6 +123,11 @@
    (gl:delete-textures (list (tex-gl-object texture)))
    (setf (tex-gl-object texture) nil
 	 (tex-gl-object-valid texture) nil)))
+
+(defun set-texture-size (tex width height)
+  (free-texture-data tex)
+  (setf (tex-width tex) width
+	(tex-height tex) height))
 
 (defvar texture-1 (make-texture :image (make-checker-pattern 500 :color-b '(128 128 128)
 								 :color-f '(64 64 64))))

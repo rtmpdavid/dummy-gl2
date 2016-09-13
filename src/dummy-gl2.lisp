@@ -8,6 +8,7 @@
 (defparameter *sdl2-thread* nil)
 (defparameter *gl-context* nil)
 (defparameter *window* nil)
+(defparameter *window-size* nil)
 
 (defun print-info ()
   (multiple-value-bind (sdl2-major sdl2-minor sdl2-patch)
@@ -29,6 +30,7 @@
 (defun init-window (&key (title "engine-base") (w 100) (h 100) (flags '(:shown :opengl)))
   (format t "Creating sdl2 window~%")
   (setf *window* (sdl2:create-window :title title :w w :h h :flags flags))
+  (setf *window-size* (list w h))
   (sdl2:gl-set-attr :context-major-version 4)
   (sdl2:gl-set-attr :context-minor-version 1)
   (sdl2:gl-set-attr :context-profile-mask sdl2-ffi::+SDL-GL-CONTEXT-PROFILE-CORE+)
@@ -38,7 +40,7 @@
   (sdl2:gl-make-current *window* *gl-context*)
   (sdl2:gl-set-swap-interval 1))
 
-(defun start-main-loop (&key (w 1000) (h 1000) (title "foobar"))
+(defun start-main-loop (&key (w 320) (h 320) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
@@ -80,9 +82,10 @@
 (defvar fb nil)
 
 (defun main-loop ()
-  (setf fb (make-framebuffer (make-texture :size '(2000 2000)
-					   :internal-format :rgba)
-			     :samples 8))
+  (setf fb (make-framebuffer
+	    :color (make-texture :size '(32 32)
+				 :internal-format :rgba
+				 :mag-filter :nearest)))
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -110,35 +113,44 @@
       (setf frame-count 0
   	    old-time time)))
 
+  (set-framebuffer-size fb 8 8)
   (bind-framebuffer fb)
-  (gl:clear :color-buffer-bit)
-
+  (clear-buffers :color '(0.30 0.2 0.2 1.0))
   (use-gl-shader :trivial-texture-model)
   (use-texture texture-1 :texture0)
 
   (shader-set-uniform :trivial-texture-model :texture-1 0)
   (shader-set-uniform :trivial-texture-model :model
-		      (rtg-math.matrix4:* 
-		       (rtg-math.matrix4:rotation-z bar)
+  		      (rtg-math.matrix4:*
 		       (rtg-math.matrix4:*
-			(rtg-math.matrix4:translation (v! -1.0 -1.0 1.0))
-			(rtg-math.matrix4:scale (v! 2.0 2.0 1.0)))))
-  (gl:polygon-mode :front-and-back :line)
-  ;; (gl:polygon-mode :front-and-back :fill)
+			(rtg-math.matrix4:rotation-z bar)
+			(rtg-math.matrix4:translation (v! -1.0 -1.0 1.0)))
+		       (rtg-math.matrix4:scale (v! 2.0 2.0 2.0))))
+    ;; (gl:polygon-mode :front-and-back :line)
+  (gl:polygon-mode :front-and-back :fill)
   (draw-mesh circle)
 
   (unbind-framebuffer)
 
-  (bind-framebuffer fb :read-framebuffer)
-  (gl:bind-framebuffer :draw-framebuffer 0)
+  ;; (bind-framebuffer fb :read-framebuffer)
+  ;; (gl:bind-framebuffer :draw-framebuffer 0)
+  ;; (blit-framebuffer fb :filter :nearest)
+  ;; (blit-framebuffer fb :filter :linear)
+  ;; (gl:bind-framebuffer :draw-framebuffer 0)
+  ;; (gl:bind-framebuffer :read-framebuffer 0)
 
-  (%gl:blit-framebuffer 0 0 1000 1000 0 0 1000 1000 :color-buffer-bit :nearest)
+  ;; (gl:bind-framebuffer :framebuffer 0)
+  (clear-buffers)
+  (use-gl-shader :trivial-texture-model)
+  (use-texture (framebuffer-color-attachment fb) :texture0)
+  (gl:polygon-mode :front-and-back :fill)
+
+  (shader-set-uniform :trivial-texture-model :model
+		      (rtg-math.matrix4:*
+		       (rtg-math.matrix4:translation (v! -1.0 -1.0 1.0))
+		       (rtg-math.matrix4:scale (v! 2.0 2.0 2.0))))
   
-  ;; (use-gl-shader :trivial-texture)
-  ;; (use-texture (framebuffer-color-attachment fb) :texture0)
-  ;; (draw-mesh square-3d-tex)
+  (draw-mesh square-3d-tex)
 
-  (gl:bind-framebuffer :draw-framebuffer 0)
-  (gl:bind-framebuffer :read-framebuffer 0)
   (flush-renderer))
 
