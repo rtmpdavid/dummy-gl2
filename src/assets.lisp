@@ -1,9 +1,10 @@
 (in-package :cl-user)
 (defpackage dummy-gl2.assets
   (:use :cl
-	:cl-fad
-	#:dummy-gl2.config
-	:rtmp-utils)
+   :cl-fad
+   #:dummy-gl2.config
+   :rtmp-utils
+   :obj-parser)
   (:export :list-assets
    :load-asset))
 (in-package :dummy-gl2.assets)
@@ -50,10 +51,18 @@
       	    :height (array-dimension img 0)
       	    :data img))))
 
+(defun load-obj (filename)
+  (let* ((obj (with-open-file (img (absolute-asset-name filename))
+		(obj-parser:parse-obj img t))))
+    obj))
+
 (defun %load-asset-switch (filename)
   (if (null (pathname-type filename))
       (load-text filename)
       (string-case (pathname-type filename)
 	("png" (load-png filename))
 	("txt" (load-text filename))
+	("obj" (load-obj filename))
 	(t (error (format nil "Don't know how to load a ~a" (pathname-type filename)))))))
+
+

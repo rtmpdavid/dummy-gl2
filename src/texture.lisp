@@ -138,9 +138,6 @@
 				:wrap-s :clamp-to-edge
 				:wrap-t :clamp-to-edge))
 
-(defvar texture-3 (make-texture :size '(10000 10000)))
-
-
 ;; (defvar textures (make-hash-table))
 
 ;; (defun get-texture (name)

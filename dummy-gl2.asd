@@ -20,7 +20,6 @@
 	       (:file "package")
 	       (:module "src"
 		:components ((:file "bits")
-			     (:file "dummy-gl2")
 			     (:file "assets")
 			     (:file "mesh")
 			     (:file "texture")
@@ -28,6 +27,7 @@
 			     (:file "shader")
 			     (:file "framebuffer")
 			     (:file "gl")
+			     (:file "dummy-gl2")
 			     (:file "renderer")))
 	       (:module "tools"
 		:components (;; (:file "sprite")

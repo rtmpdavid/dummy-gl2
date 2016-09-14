@@ -125,3 +125,32 @@
 				   :tex2 (list pos-x pos-y))
 	  repeat n-vertices)
     mesh))
+
+(defun mesh-from-asset (asset)
+  (let ((layout '(:pos3)))
+    (when (getf asset :texture)
+      (push :tex2 layout))
+    (when (getf asset :normals)
+      (push :nor3 layout))
+    (let ((mesh (make-mesh (length (getf asset :verts))
+			   (* 3 (length (getf asset :faces))) (reverse layout))))
+      (loop for i from 0
+	    for v across (getf asset :verts)
+	    do (mesh-set-vert mesh i :pos3 v))
+      (when (getf asset :texture)
+	(loop for i from 0
+	      for tex across (getf asset :texture)
+	      do (mesh-set-vert mesh i :tex2 tex)))
+      (when (getf asset :normals)
+	(loop for i from 0
+	      for tex across (getf asset :normals)
+	      do (mesh-set-vert mesh i :nor3 tex)))
+      (loop for i from 0
+	    for elt across (getf asset :faces)
+	    for v = (getf elt :v)
+	    if v
+	      do (loop for j from 0
+		       for e in v
+		       do (setf (aref (mesh-elts mesh) (+ (* i 3) j))
+				e)))
+      mesh)))

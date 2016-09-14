@@ -78,9 +78,11 @@
 				       :width (elt depth-stencil-size 0)
 				       :height (elt depth-stencil-size 1))))))
     (setf (framebuffer-size fb)
-	  (if (gl-texture-p color)
-	      (setf depth-stencil-size (list (tex-width color) (tex-height color)))
-	      (setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color)))))
+	  (if color-p
+	      (if (gl-texture-p color)
+		  (setf depth-stencil-size (list (tex-width color) (tex-height color)))
+		  (setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color))))
+	      color-size))
     fb))
 
 (defun attach-texture (fb tex attachment)
@@ -123,8 +125,10 @@
       (:framebuffer-incomplete-attachment (warn "Framebuffer attachment incomplete"))
       (:framebuffer-incomplete-dimensions (warn "Framebuffer dimensions incomplete"))
       (:framebuffer-incomplete-missing-attachment (warn "No images attached to framebuffer"))
-      (:framebuffer-complete (print "Framebuffer complete"))
-      (:framebuffer-complete-oes (print "Framebuffer complete"))
+      (:framebuffer-complete ;; (print "Framebuffer complete")
+       )
+      (:framebuffer-complete-oes ;; (print "Framebuffer complete")
+       )
       (t (warn (format nil "Framebuffer error ~a" (gl:check-framebuffer-status :framebuffer)))))
     (setf (framebuffer-gl-object-valid-p fb) t)))
 

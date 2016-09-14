@@ -127,7 +127,8 @@
   (let ((gl-shader (get-gl-shader name)))
     (when (not (shader-object-valid-p gl-shader))
       (when (shader-object gl-shader)
-	(gl:delete-program (shader-object gl-shader)))
+	(gl:delete-program (shader-object gl-shader))
+	(setf (shader-object gl-shader) nil))
       (compile-gl-shader-program gl-shader))
     (gl:use-program (shader-object gl-shader))))
 
@@ -135,8 +136,8 @@
   (let ((location (uniform-location uniform)))
    (case (uniform-type uniform)
      (:sampler-2d (%gl:uniform-1i location value))
-     (:mat4 (gl:uniform-matrix-4fv location value nil)
-      )
+     (:mat4 (gl:uniform-matrix-4fv location value nil))
+     (:vec3 (gl:uniformf location (x value) (y value) (z value)))
      (t (warn (format nil "Do not yet know how to set ~a" (uniform-type uniform))))))
   )
 
@@ -160,19 +161,39 @@
 (defun shader-set-float (progname name val)
   (%gl:uniform-1f (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) val))
 
+(add-gpu-program :trivial-model-color-uniform
+		 :force-reload t    
+		 :uniforms '((model :mat4)
+			     (col3 :vec3))
+		 :vertex '(((pos3 :vec3))
+			   (* model (v! pos3 1.0)))
+		 :fragment '(()
+			     (v! col3 1.0)))
+
 (add-gpu-program :trivial-texture-model
 		 :force-reload t    
 		 :uniforms '((texture-1 :sampler-2d)
 			     (model :mat4))
 		 :vertex '(((pos3 :vec3)
 			    (tex2 :vec2))
-			   (values (* model
-				    (v! pos3 1.0))
-			    tex2))
+			   (let ((out pos3))
+			     (setf (z out) 0.0)
+			     (values (* model
+					(v! pos3 1.0))
+				     tex2)))
 		 :fragment '(((tex2 :vec2))
 			     (+ (varjo::texture texture-1 tex2))))
 
-
-
-
-
+(add-gpu-program :trivial-wat
+		 :force-reload t    
+		 :uniforms '((model :mat4))
+		 :vertex '(((pos3 :vec3))
+			   (values (* model
+				    (v! pos3 1.0))
+			    (* model
+			     (v! pos3 1.0))))
+		 :fragment '(((color :vec4))
+			     (let ((out (v! (x color)
+					    (y color)
+					    (z color))))
+			      (varjo::normalize out))))
