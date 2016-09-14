@@ -126,7 +126,7 @@
 	  repeat n-vertices)
     mesh))
 
-(defun mesh-from-asset (asset)
+(defun mesh-from-asset (asset &optional (flip nil))
   (let ((layout '(:pos3)))
     (when (getf asset :texture)
       (push :tex2 layout))
@@ -150,7 +150,8 @@
 	    for v = (getf elt :v)
 	    if v
 	      do (loop for j from 0
-		       for e in v
+		    for e in (if flip (reverse v)
+				 v)
 		       do (setf (aref (mesh-elts mesh) (+ (* i 3) j))
 				e)))
       mesh)))
