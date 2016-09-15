@@ -1,19 +1,57 @@
-DummyGL 2 development log thing
+* Dummy-GL 2
+** development log thing
 
-<2016-09-08 Thu> Textures
-Got textures working, note to self: Next time you work with OpenGL textures don't forget to set texture parameters, they will not work otherwise. 
-Also gl-vertices/meshes do not regenerate correctly when something new is added, investigate.
+*** <2016-09-08 Thu> Textures Got textures working.
+    note to self: Next time you work with OpenGL textures don't forget
+    to set texture parameters, they will not work otherwise.  Also
+    gl-vertices/meshes do not regenerate correctly when something new is
+    added, investigate.
+    
+*** <2016-09-09 Fri> The GPU Fill Rate did it
+    It appears that the performance drop related to polygon drawing was
+    not in fact limited by GPU fill rate rather than me trying to push
+    too much draw calls/polygons.  If that is actually true, a number
+    optimizations become meaningful (like polygon culling) and the
+    engine could be relatively well performing after all.  This would
+    also explain the fact that the performance drop was non-linear.
+    
+*** <2016-09-11 Sun> Figured out why multiple meshes were not drawing.
+    Properly Meshes were not drawing properly because I did not specify
+    element offset when drawing them.  Also I did something for generic
+    uniform setting, I don't quite like it so I should figure out a
+    better way
+    
+*** <2016-09-13 Tue> Framebuffers require some things.
+    Apparently when you use multisampling, everything should use
+    multisampling.  If you use multisampling blitting should use the
+    size of the target framebuffer, not sure if source buffer should be
+    of that size One must reset viewport if framebuffer sizes do not
+    match, that is kinda obvious in retrospect
+    
+*** <2016-09-15 Thu> Framebuffes sorta done.
+    Well, they do work properly now, *but* right now I have no way to
+    have multiple color buffers, a thing I may want for reasons (like
+    deferred rendering, I'm planning to have that)
+    
 
-[2016-09-09 Fri] The GPU Fill Rate did it
-It appears that the performance drop related to polygon drawing was not in fact limited by GPU fill rate rather than me trying to push too much draw calls/polygons.
-If that is actually true, a number optimizations become meaningful (like polygon culling) and the engine could be relatively well performing after all.
-This would also explain the fact that the performance drop was non-linear.
-
-<2016-09-11 Sun> Figured out why multiple meshes were not drawing properly
-Meshes were not drawing properly because I did not specify element offset when drawing them.
-Also I did something for generic uniform setting, I don't quite like it so I should figure out a better way
-
-<2016-09-13 Tue> Framebuffers require some things, apparently
-When you use multisampling, everything should use multisampling.
-If you use multisampling blitting should use the size of the target framebuffer, not sure if source buffer should be of that size
-One must reset viewport if framebuffer sizes do not match, that is kinda obvious in retrospect
+** TODO
+*** TODO Figure out how to link this file with dummy-gl2.org
+*** DONE Fix vertices/meshes gl object regeneration
+*** DONE Check if performance issues are really related to gpu fill rate (yep, it was fill rate)
+*** TODO Create a render lock mechanism for all the things that could be recompiled interactively
+**** Create render lock, something along the lines of ``with-render-lock'' macro
+**** Add render lock to all the things that could be modified interactively
+**** Don't forget to minimize time spent locked
+*** TODO Invalidvalue for delete program on shader reload
+*** TODO Do something about the possibility of multiple fragment data locations in shaders and framebuffer
+*** TODO Implement all the basic shaders and transformation matrices for them
+**** 3d
+***** Perspective matrix
+***** Basic model-view-projection
+**** 2d 
+***** Orthogonal projection matrix
+***** Basic model-view-projection
+**** 
+*** TODO GL object struct definition macro
+Most gl object structs I use tend to follow the same pattern, to some extend I do not want to use classes with inheritance(why?) so I should make a macro or something
+*** TODO REFACTOR RESTRUCTURE RESOMETHING
