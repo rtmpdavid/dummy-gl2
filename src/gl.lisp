@@ -159,3 +159,19 @@
   (unbind-vbo-buffer)
   (unbind-ebo-buffer))
 
+(defvar gl-state (make-hash-table))
+
+(defun gl-state-enable (target)
+  (if (not (gethash target gl-state))
+      (progn
+	(gl:enable target)
+	(setf (gethash target gl-state) t))
+      (format t "state of ~a matches(t)~%" target)))
+
+(defun gl-state-disable (target)
+  (if (gethash target gl-state)
+      (progn
+	(gl:disable target)
+	(setf (gethash target gl-state) nil))
+      (format t "state of ~a matches(nil)~%" target)))
+
