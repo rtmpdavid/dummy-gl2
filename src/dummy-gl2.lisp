@@ -40,7 +40,7 @@
   (sdl2:gl-make-current *window* *gl-context*)
   (sdl2:gl-set-swap-interval 1))
 
-(defun start-main-loop (&key (w 1000) (h 1000) (title "foobar"))
+(defun start-main-loop (&key (w 500) (h 500) (title "foobar"))
   (setf *sdl2-thread*
 	(bordeaux-threads:make-thread
 	 #'(lambda ()
@@ -86,7 +86,10 @@
   (setf fb (make-framebuffer :color (make-texture :size '(500 500)
   						  :internal-format :rgba
   						  :mag-filter :linear)))
-  (setf ms-fb (make-framebuffer :color-size *window-size* :samples 8))
+  (setf ms-fb (make-framebuffer :color-size *window-size*))
+  (gl-state-enable :depth-test)
+  (gl-state-enable :cull-face)
+
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -96,10 +99,11 @@
     (:quit () t)))
 
 (defun process-event-window (event data1 data2)
-  ;; (if (eq :resized (decode-window-event event))
-  ;;     ;; (progn (setf *window-size* (list data1 data2))
-  ;;     ;; 	     (gl:viewport 0.0 0.0 data1 data2))
-  ;;     )
+  (when (= event sdl2-ffi:+sdl-windowevent-resized+)
+    (setf *window-size* (list data1 data2))
+    (gl:viewport 0.0 0.0 data1 data2))
+  ;; (sdl2-ffi:+sdl-windowevent-size-changed+ (progn (setf *window-size* (list data1 data2))
+  ;; 						    (gl:viewport 0.0 0.0 data1 data2)))
   )
 
 (defvar frame-count 0)
@@ -112,78 +116,96 @@
 ;; (defvar ndir 1)
 
 (defun idle-fun ()
-  (incf bar 0.001)
+  (let ((res 100))
+    (set-framebuffer-size fb res res)
+    (set-framebuffer-size ms-fb res res)
+    (bind-framebuffer ms-fb)
+    (clear-buffers)
+    (gl:cull-face :back)
+    (gl:polygon-mode :front-and-back :fill)
+    (use-gl-shader :diffuse)
+    (let ((model-mat (mult-mat4
+		      (rtg-math.matrix4:translation (v! 0.0 0.0 -1.5))
+		      (rtg-math.matrix4:rotation-x (* bar 0.3))		       
+		      (rtg-math.matrix4:rotation-z bar)
+		      (rtg-math.matrix4:scale (v! 0.01 0.01 0.01)))))
+      (shader-set-uniform :diffuse :projection
+			  (mult-mat4
+			   (rtg-math.projection:perspective res ;; (first *window-size*)
+							    res ;; (second *window-size*)
+							    5.0 -10.0 45)))
+      (shader-set-uniform :diffuse :model model-mat)
+      (shader-set-uniform :diffuse :normal-matrix
+			  (rtg-math.matrix4:transpose
+			   (rtg-math.matrix4:inverse
+			    model-mat)))))
+  (shader-set-uniform :diffuse :light-pos
+		      (rtg-math.vector3:normalize (v! 1.0 0.0 0.0)))
+  (shader-set-uniform :diffuse :ambient 0.1)
+  (draw-mesh teapot)
+  (blit-framebuffer ms-fb :fb-dest fb)
+  
+  (unbind-framebuffer)
+  (gl:cull-face :front)
+  (gl:polygon-mode :front-and-back :fill)
+
+  (clear-buffers :color '(0.30 0.2 0.2 1.0))
+  
+  (use-gl-shader :texture-proj-model)
+  (use-texture (framebuffer-color-attachment fb) :texture0)
+  (shader-set-uniform :texture-proj-model :texture-1 0)
+  (shader-set-uniform :texture-proj-model :projection
+		      (rtg-math.projection:orthographic (first *window-size*)
+							(second *window-size*)
+							0.0 -3.0))
+
+  (let ((s-val (* 0.7 (if (apply #'< *window-size*)
+		    (first *window-size*)
+		    (second *window-size*)))))
+    (shader-set-uniform :texture-proj-model :model
+			(mult-mat4
+			 (rtg-math.matrix4:translation
+			  (v! (- (/ s-val 2.0))
+			      (- (/ s-val 2.0))
+			      0.0))
+			 (rtg-math.matrix4:scale
+			  (v! s-val
+			      s-val
+			      0.0))))
+    (draw-mesh circle))
+
+  (use-texture texture-1 :texture0)
+
+  (let ((s-val (if (apply #'< *window-size*)
+		   (first *window-size*)
+		   (second *window-size*))))
+    (incf s-val s-val)
+    (shader-set-uniform :texture-proj-model :model
+			(mult-mat4
+			 (rtg-math.matrix4:rotation-z (- (/ bar 3.0)))
+			 (rtg-math.matrix4:translation
+			  (v! (- (/ s-val 2.0))
+			      (- (/ s-val 2.0))
+			      0.0))
+			 (rtg-math.matrix4:scale
+			  (v! s-val
+			      s-val
+			      0.0)))))
+  (draw-mesh circle)
+  
+  (incf bar 0.02)
   (incf frame-count)
   (incf meh)
   (let ((time (get-internal-real-time)))
     (when (> (- time old-time) 1000)
       (setf foo (not foo))
-      (format t "~a ~a ~a~%" frame-count polygon-count-last (/ (float (- time old-time))
-      							       polygon-count-last))
+      (format t "fc: ~a ~a ~a~%"
+	      frame-count polygon-count-last
+	      (/ (float (- time old-time))
+		 polygon-count-last))
       (setf frame-count 0
   	    old-time time)))
-
-  ;; (set-framebuffer-size fb 20 20)
-  ;; (bind-framebuffer fb :framebuffer)
-  (bind-framebuffer ms-fb)
-  (clear-buffers)
-
-  (use-gl-shader :trivial-texture-model)
-  (use-texture texture-1 :texture0)
-
-  ;; (shader-set-uniform :trivial-texture-model :texture-1 0)
-  ;; (shader-set-uniform :trivial-texture-model :model
-  ;; 		      (rtg-math.matrix4:*
-  ;; 		       (rtg-math.matrix4:*
-  ;; 			(rtg-math.matrix4:rotation-z bar)
-  ;; 			(rtg-math.matrix4:translation (v! -1.0 -1.0 1.0)))
-  ;; 		       (rtg-math.matrix4:scale (v! 2.0 2.0 2.0))))
-  (gl:cull-face :back)
-  (gl:enable :cull-face)
-  (gl:polygon-mode :front-and-back :line)
-  (gl:polygon-mode :front-and-back :fill)
-  (use-gl-shader :trivial-wat)
-  ;; (shader-set-uniform :trivial-model-color-uniform :col3 (v! 1.0 0.0 0.0))
-  (shader-set-uniform :trivial-wat :model
-  		      (mult-mat4
-		       (rtg-math.projection:perspective (first *window-size*)
-							(second *window-size*)
-							 1.0 -10.0 45)
-  		       (rtg-math.matrix4:translation (v! 1.0 1.0 -2.0))
-  		       (rtg-math.matrix4:rotation-x (* bar 0.3))		       
-  		       (rtg-math.matrix4:rotation-z bar)
-  		       (rtg-math.matrix4:scale (v! 0.01 0.01 0.01))))
-  (draw-mesh teapot)
-
-  (shader-set-uniform :trivial-wat :model
-  		      (mult-mat4
-		       (rtg-math.projection:perspective (first *window-size*)
-							(second *window-size*)
-							 1.0 10.0 45)
-  		       (rtg-math.matrix4:translation (v! -0.5 -0.5 -2.0))
-  		       (rtg-math.matrix4:rotation-x (* bar 0.3))		       
-  		       (rtg-math.matrix4:rotation-z bar)
-  		       (rtg-math.matrix4:scale (v! 1.0 1.0 1.0))))
-  (draw-mesh cube-3d)
-
-  ;; (use-gl-shader :trivial-texture-model)
-  ;; (use-texture (framebuffer-color-attachment fb) :texture0)
-  ;; (shader-set-uniform :trivial-texture-model :texture-1 0)
-  ;; (shader-set-uniform :trivial-texture-model :model
-  ;; 		      (mult-mat4
-  ;; 		       (rtg-math.matrix4:rotation-z bar)
-  ;; 		       (rtg-math.matrix4:translation (v! -1.0 -1.0 1.0))
-  ;; 		       (rtg-math.matrix4:scale (v! 2.0 2.0 2.0))))
-
-  ;; (gl:polygon-mode :front-and-back :fill)
-  ;; (clear-buffers :color '(0.30 0.2 0.2 1.0))
-  ;; (draw-mesh circle)
   
-  ;; (unbind-framebuffer)
-
-  (blit-framebuffer ms-fb :filter :nearest)
-
-  (gl:bind-framebuffer :framebuffer 0)
   (flush-renderer))
 
 

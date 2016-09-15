@@ -138,6 +138,7 @@
      (:sampler-2d (%gl:uniform-1i location value))
      (:mat4 (gl:uniform-matrix-4fv location value nil))
      (:vec3 (gl:uniformf location (x value) (y value) (z value)))
+     (:float (gl:uniformf location value))
      (t (warn (format nil "Do not yet know how to set ~a" (uniform-type uniform))))))
   )
 
@@ -170,30 +171,42 @@
 		 :fragment '(()
 			     (v! col3 1.0)))
 
-(add-gpu-program :trivial-texture-model
+(add-gpu-program :texture-proj-model
 		 :force-reload t    
 		 :uniforms '((texture-1 :sampler-2d)
+			     (projection :mat4)
 			     (model :mat4))
 		 :vertex '(((pos3 :vec3)
 			    (tex2 :vec2))
 			   (let ((out pos3))
-			     (setf (z out) 0.0)
-			     (values (* model
+			     (values (* projection
+					model
 					(v! pos3 1.0))
 				     tex2)))
 		 :fragment '(((tex2 :vec2))
-			     (+ (varjo::texture texture-1 tex2))))
+			     (varjo::texture texture-1 tex2)))
 
-(add-gpu-program :trivial-wat
+(add-gpu-program :diffuse
 		 :force-reload t    
-		 :uniforms '((model :mat4))
-		 :vertex '(((pos3 :vec3))
-			   (values (* model
-				    (v! pos3 1.0))
-			    (* model
-			     (v! pos3 1.0))))
-		 :fragment '(((color :vec4))
-			     (let ((out (v! (x color)
-					    (y color)
-					    (z color))))
-			      (varjo::normalize out))))
+		 :uniforms '((model :mat4)
+			     (normal-matrix :mat4)
+			     (projection :mat4)
+			     (light-pos :vec3)
+			     (ambient :float))
+		 :vertex '(((pos3 :vec3)
+			    (nor3 :vec3))
+			   (let
+			       ((nor (* normal-matrix (v! nor3 1.0)))
+				(pos (* model (v! pos3 1.0))))
+			     (values (* projection pos)
+				     (v! (x nor) (y nor) (z nor))
+				     (v! (x pos) (y pos) (z pos)))))
+		 :fragment '(((normal :vec3)
+			      (pos :vec3))
+			     (let* ((light-direction
+				      (varjo::normalize (- light-pos (v! (x pos)
+									 (y pos)
+									 (z pos)))))
+				    (diff (+ ambient
+					     (max (varjo::dot (varjo::normalize normal) light-direction) 0.0))))			       
+			       (v! diff diff diff 1.0))))
