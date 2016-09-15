@@ -17,3 +17,4 @@
 ** 
 * TODO GL object struct definition macro
 Most gl object structs I use tend to follow the same pattern, to some extend I do not want to use classes with inheritance(why?) so I should make a macro or something
+* TODO REFACTOR RESTRUCTURE RESOMETHING

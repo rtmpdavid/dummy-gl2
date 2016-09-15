@@ -125,10 +125,8 @@
       (:framebuffer-incomplete-attachment (warn "Framebuffer attachment incomplete"))
       (:framebuffer-incomplete-dimensions (warn "Framebuffer dimensions incomplete"))
       (:framebuffer-incomplete-missing-attachment (warn "No images attached to framebuffer"))
-      (:framebuffer-complete ;; (print "Framebuffer complete")
-       )
-      (:framebuffer-complete-oes ;; (print "Framebuffer complete")
-       )
+      (:framebuffer-complete t)
+      (:framebuffer-complete-oes t)
       (t (warn (format nil "Framebuffer error ~a" (gl:check-framebuffer-status :framebuffer)))))
     (setf (framebuffer-gl-object-valid-p fb) t)))
 
