@@ -12,7 +12,7 @@
 	(if (zerop (logxor (truncate i size) (truncate j size)))
 	    (setf color color-b)
 	    (setf color color-f))
-	(dotimes (k 2)
+	(dotimes (k 3)
 	  (setf (aref pattern j i k) (elt color k)))))
     (list
      :data pattern
@@ -129,8 +129,8 @@
   (setf (tex-width tex) width
 	(tex-height tex) height))
 
-(defvar texture-1 (make-texture :image (make-checker-pattern 500 :color-b '(128 128 128)
-								 :color-f '(64 64 64))))
+(defvar texture-1 (make-texture :image (make-checker-pattern 250 :color-b (mapcar #'floor (list (* 255 0.30) (* 255 0.2) (* 255 0.2)))
+								 :color-f '(255 255 255))))
 (defvar texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
 							 :color-f '(0 255 0))
 				:min-filter :linear
@@ -138,11 +138,3 @@
 				:wrap-s :clamp-to-edge
 				:wrap-t :clamp-to-edge))
 
-;; (defvar textures (make-hash-table))
-
-;; (defun get-texture (name)
-;;   (gethash name textures))
-
-;; (defun add-texture (name data)
-;;   (if (gethash name textures) (get-texture name))
-;; )
