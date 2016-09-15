@@ -130,28 +130,28 @@
   (let ((layout '(:pos3)))
     (when (getf asset :texture)
       (push :tex2 layout))
-    (when (getf asset :normals)
-      (push :nor3 layout))
-    (let ((mesh (make-mesh (length (getf asset :verts))
-			   (* 3 (length (getf asset :faces))) (reverse layout))))
-      (loop for i from 0
-	    for v across (getf asset :verts)
-	    do (mesh-set-vert mesh i :pos3 v))
-      (when (getf asset :texture)
+    (push :nor3 layout)
+    (let ((normals (if (getf asset :normals) (getf asset :normals)
+		       (calculate-normals asset))))
+      (let ((mesh (make-mesh (length (getf asset :verts))
+			     (* 3 (length (getf asset :faces))) (reverse layout))))
 	(loop for i from 0
-	      for tex across (getf asset :texture)
-	      do (mesh-set-vert mesh i :tex2 tex)))
-      (when (getf asset :normals)
+	      for v across (getf asset :verts)
+	      do (mesh-set-vert mesh i :pos3 v))
 	(loop for i from 0
-	      for tex across (getf asset :normals)
-	      do (mesh-set-vert mesh i :nor3 tex)))
-      (loop for i from 0
-	    for elt across (getf asset :faces)
-	    for v = (getf elt :v)
-	    if v
-	      do (loop for j from 0
-		    for e in (if flip (reverse v)
-				 v)
-		       do (setf (aref (mesh-elts mesh) (+ (* i 3) j))
-				e)))
-      mesh)))
+	      for nor3 across normals
+	      do (mesh-set-vert mesh i :nor3 nor3))
+	(when (getf asset :texture)
+	  (loop for i from 0
+		for tex across (getf asset :texture)
+		do (mesh-set-vert mesh i :tex2 tex)))
+	(loop for i from 0
+	      for elt across (getf asset :faces)
+	      for v = (getf elt :v)
+	      if v
+		do (loop for j from 0
+			 for e in (if flip (reverse v)
+				      v)
+			 do (setf (aref (mesh-elts mesh) (+ (* i 3) j))
+				  e)))
+	mesh))))

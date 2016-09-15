@@ -46,3 +46,34 @@
 (defun mult-mat4 (&rest matrices)
   (reduce #'rtg-math.matrix4:* matrices
 	  :initial-value (rtg-math.matrix4:identity)))
+
+(defun face-vert (index face verts)
+  (elt verts (elt face index)))
+
+(defun face-normal (face verts)
+  (let ((a (coerce (face-vert 0 face verts) '(vector single-float)))
+	(b (coerce (face-vert 1 face verts) '(vector single-float)))
+	(c (coerce (face-vert 2 face verts) '(vector single-float))))
+    (rtg-math.vector3:cross (rtg-math.vector3:- b a)
+			    (rtg-math.vector3:- c a))))
+
+(defun vert-normal (verts faces)
+  (loop for face in faces
+	collecting (face-normal face verts)))
+
+(defun calculate-normals (mesh)
+  (let ((verts (getf mesh :verts)))
+    (coerce
+     (loop for index from 0 to (1- (length verts))
+	   for faces = (map 'list #'(lambda (e)
+				      (getf e :v))
+			    (remove-if-not #'(lambda (face)
+					       (find index face))
+					   (getf mesh :faces)
+					   :key #'(lambda (face)
+						    (getf face :v))))
+	   collecting (coerce (rtg-math.vector3:normalize
+			       (reduce #'rtg-math.vector3:+
+				       (vert-normal verts faces)))
+			      'list))
+     'vector)))
