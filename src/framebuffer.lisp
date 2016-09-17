@@ -134,29 +134,30 @@
   (gl:bind-framebuffer :framebuffer 0)
   (apply #'gl:viewport (append (list 0 0) *window-size*)))
 
-(defun blit-framebuffer (fb-src &key (fb-dest 0) (filter :nearest))
+(defun blit-framebuffer (fb-src &key (fb-dest 0) (filter :nearest) (buffer-bits '(:color-buffer-bit)))
   (if (gl-framebuffer-p fb-src) (bind-framebuffer fb-src :read-framebuffer)
       (gl:bind-framebuffer :read-framebuffer fb-src))
   (if (gl-framebuffer-p fb-dest) (bind-framebuffer fb-dest :draw-framebuffer)
       (gl:bind-framebuffer :draw-framebuffer fb-dest))
-  (apply #'%gl:blit-framebuffer
-	 (append '(0 0)
-		 (if (gl-framebuffer-p fb-src)
-		     (framebuffer-size fb-src)
-		     *window-size*)
-		 '(0 0)
-		 (if (gl-framebuffer-p fb-dest)
-		     (framebuffer-size fb-dest)
-		     *window-size*)
-		 (list :color-buffer-bit
-		       filter)))
+  (loop for bit in buffer-bits
+	do (apply #'%gl:blit-framebuffer
+		  (append '(0 0)
+			  (if (gl-framebuffer-p fb-src)
+			      (framebuffer-size fb-src)
+			      *window-size*)
+			  '(0 0)
+			  (if (gl-framebuffer-p fb-dest)
+			      (framebuffer-size fb-dest)
+			      *window-size*)
+			  (list bit
+				filter))))
   (gl:bind-framebuffer :draw-framebuffer 0)
   (gl:bind-framebuffer :read-framebuffer 0))
 
 (defun set-attachment-size (attachment width height)
   (when attachment
-   (if (gl-texture-p attachment) (set-texture-size attachment width height)
-       (set-renderbuffer-size attachment width height))))
+    (if (gl-texture-p attachment) (set-texture-size attachment width height)
+	(set-renderbuffer-size attachment width height))))
 
 (defun set-framebuffer-size (fb width height)
   (set-attachment-size (framebuffer-color-attachment fb) width height)
