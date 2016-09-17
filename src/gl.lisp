@@ -5,11 +5,6 @@
    :rtmp-utils))
 (in-package :dummy-gl2)
 
-(defun dump-gl-array (glarray)
-  (loop for i from 0
-	collect (gl:glaref glarray i)
-	repeat (gl::gl-array-size glarray)))
-
 (defclass gl-vertices ()
   ((gl-array
     :initform nil
@@ -139,19 +134,13 @@
 (defun unbind-ebo-buffer ()
   (gl:bind-buffer :element-array-buffer 0))
 
-(defun bind-vao (mesh)
+(defun vao-setup (mesh)
   (let ((vao (if (mesh-vao mesh) (mesh-vao mesh)
 		 (gl:gen-vertex-array))))
     (gl:bind-vertex-array vao)
     (bind-ebo-buffer (mesh-gl-array mesh))
     (bind-vbo-buffer (mesh-gl-array mesh))
-    (mapcar  #'gl:enable-vertex-attrib-array 
-	     (mapcar #'attrib-position  (mesh-layout mesh)))
-    (mapcar #'(lambda (args)
-		(apply #'%gl:vertex-attrib-pointer args))
-	    (mapcar #'(lambda (attrib)
-			(attrib-pointer-args attrib mesh))
-		    (mesh-layout mesh)))
+    (mesh-set-attrib-pointers mesh)
     (when (not (mesh-vao mesh))
       (setf (mesh-vao mesh) vao
 	    (mesh-vao-valid-p mesh) t)))
@@ -165,13 +154,11 @@
   (if (not (gethash target gl-state))
       (progn
 	(gl:enable target)
-	(setf (gethash target gl-state) t))
-      (format t "state of ~a matches(t)~%" target)))
+	(setf (gethash target gl-state) t))))
 
 (defun gl-state-disable (target)
   (if (gethash target gl-state)
       (progn
 	(gl:disable target)
-	(setf (gethash target gl-state) nil))
-      (format t "state of ~a matches(nil)~%" target)))
+	(setf (gethash target gl-state) nil))))
 

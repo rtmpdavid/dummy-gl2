@@ -86,10 +86,8 @@
   (setf fb (make-framebuffer :color (make-texture :size '(500 500)
   						  :internal-format :rgba
   						  :mag-filter :linear)))
-  (setf ms-fb (make-framebuffer :color-size *window-size*))
-  (gl-state-enable :depth-test)
-  (gl-state-enable :cull-face)
-
+  (setf ms-fb (make-framebuffer :color-size *window-size*
+				:samples 8))
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -116,81 +114,84 @@
 ;; (defvar ndir 1)
 
 (defun idle-fun ()
-  (let ((res 100))
+  (let ((res 1000))
     (set-framebuffer-size fb res res)
     (set-framebuffer-size ms-fb res res)
     (bind-framebuffer ms-fb)
     (clear-buffers)
+    (gl-state-enable :cull-face)
     (gl:cull-face :back)
+    (gl-state-enable :depth-test)
     (gl:polygon-mode :front-and-back :fill)
     (use-gl-shader :diffuse)
     (let ((model-mat (mult-mat4
-		      (rtg-math.matrix4:translation (v! 0.0 0.0 -1.5))
-		      (rtg-math.matrix4:rotation-x (* bar 0.3))		       
-		      (rtg-math.matrix4:rotation-z bar)
-		      (rtg-math.matrix4:scale (v! 0.01 0.01 0.01)))))
+  		      (m4:translation (v! (* -100 (cos bar))
+					  (tan (/ bar 20.0))
+					  (+ -200 (* 200 (1- (sin bar))))))
+		      (m4:rotation-z (* bar 0.6))		       
+  		      (m4:rotation-y (* bar 0.3))		       
+  		      (m4:scale (v! 1 1 1)))))
+      
       (shader-set-uniform :diffuse :projection
-			  (mult-mat4
-			   (rtg-math.projection:perspective res ;; (first *window-size*)
-							    res ;; (second *window-size*)
-							    5.0 -10.0 45)))
+  			  (mult-mat4
+  			   (rtg-math.projection:perspective res ;; (first *window-size*)
+  							    res ;; (second *window-size*)
+  							    2.0 -10.0 120)))
       (shader-set-uniform :diffuse :model model-mat)
       (shader-set-uniform :diffuse :normal-matrix
-			  (rtg-math.matrix4:transpose
-			   (rtg-math.matrix4:inverse
-			    model-mat)))))
-  (shader-set-uniform :diffuse :light-pos
-		      (rtg-math.vector3:normalize (v! 1.0 0.0 0.0)))
-  (shader-set-uniform :diffuse :ambient 0.1)
-  (draw-mesh teapot)
+  			  (m4:transpose
+  			   (m4:inverse
+  			    model-mat))))
+    (shader-set-uniform :diffuse :light-posistion
+			(v! 1000.0 0.0 0.0 0.0))
+    (shader-set-uniform :diffuse :ambient 0.1)
+    (draw-mesh teapot))
+
   (blit-framebuffer ms-fb :fb-dest fb)
   
   (unbind-framebuffer)
-  (gl:cull-face :front)
   (gl:polygon-mode :front-and-back :fill)
 
   (clear-buffers :color '(0.30 0.2 0.2 1.0))
-  
-  (use-gl-shader :texture-proj-model)
+  (use-gl-shader :texture-proj-model)  
   (use-texture (framebuffer-color-attachment fb) :texture0)
   (shader-set-uniform :texture-proj-model :texture-1 0)
   (shader-set-uniform :texture-proj-model :projection
-		      (rtg-math.projection:orthographic (first *window-size*)
-							(second *window-size*)
-							0.0 -3.0))
-
-  (let ((s-val (* 0.7 (if (apply #'< *window-size*)
-		    (first *window-size*)
-		    (second *window-size*)))))
+  		      (rtg-math.projection::orthographic (first *window-size*)
+							 (second *window-size*)
+							 0.0 -3.0))
+  (gl-state-disable :cull-face)
+  (let ((s-val (* 1.0 (if (apply #'< *window-size*)
+			  (first *window-size*)
+			  (second *window-size*)))))
     (shader-set-uniform :texture-proj-model :model
-			(mult-mat4
-			 (rtg-math.matrix4:translation
-			  (v! (- (/ s-val 2.0))
-			      (- (/ s-val 2.0))
-			      0.0))
-			 (rtg-math.matrix4:scale
-			  (v! s-val
-			      s-val
-			      0.0))))
+  			(mult-mat4
+  			 (m4:translation
+  			  (v! (- (/ s-val 2.0))
+  			      (- (/ s-val 2.0))
+  			      0.0))
+  			 (m4:scale (v! s-val
+  				       s-val
+  				       0.0))))
     (draw-mesh circle))
 
   (use-texture texture-1 :texture0)
 
   (let ((s-val (if (apply #'< *window-size*)
-		   (first *window-size*)
-		   (second *window-size*))))
+  		   (first *window-size*)
+  		   (second *window-size*))))
     (incf s-val s-val)
     (shader-set-uniform :texture-proj-model :model
-			(mult-mat4
-			 (rtg-math.matrix4:rotation-z (- (/ bar 3.0)))
-			 (rtg-math.matrix4:translation
-			  (v! (- (/ s-val 2.0))
-			      (- (/ s-val 2.0))
-			      0.0))
-			 (rtg-math.matrix4:scale
-			  (v! s-val
-			      s-val
-			      0.0)))))
+  			(mult-mat4
+  			 (m4:rotation-z (- (/ bar 3.0)))
+  			 (m4:translation
+  			  (v! (- (/ s-val 2.0))
+  			      (- (/ s-val 2.0))
+  			      0.0))
+  			 (m4:scale
+  			  (v! s-val
+  			      s-val
+  			      0.0)))))
   (draw-mesh circle)
   
   (incf bar 0.02)

@@ -15,10 +15,10 @@
        (setf ,name new-mesh)
        (add-meshes static-meshes ,name))))
 
-(define-and-add-mesh cube-3d (mesh-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
-(define-and-add-mesh square-3d-tex (make-square t nil t))
-(define-and-add-mesh circle (make-n-gon 100))
-(define-and-add-mesh teapot (mesh-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
+(define-and-add-mesh cube-3d (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
+(define-and-add-mesh square-3d-tex (mesh-make-square t nil t))
+(define-and-add-mesh circle (mesh-make-n-gon 100))
+(define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
 ;; (define-and-add-mesh urth (mesh-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
 
 (defun init-renderer ()
@@ -27,11 +27,6 @@
 (defun clear-buffers (&optional &key (color '(0.15 0.1 0.1 1.0)) (buffers (list :depth-buffer :color-buffer)))
   (apply #'gl:clear-color color)
   (apply #'gl:clear buffers))
-
-(defstruct opengl-state
-  (mesh nil :type 'mesh)
-  (shader nil :type 'gl-shader)
-  )
 
 (defvar current-mesh nil)
 
@@ -45,7 +40,7 @@
 	(progn 
 	  (when (not (gl-array-valid-p gl-array)) (alloc-vertices gl-array))
 	  (when (not (mesh-vao-valid-p mesh))
-	    (bind-vao mesh)
+	    (vao-setup mesh)
 	    (setf current-mesh nil))
 	  (when (not (eq current-mesh mesh))
 	    (gl:bind-vertex-array (mesh-vao mesh))
@@ -58,7 +53,8 @@
 	  ;; 			      :unsigned-int 0)
 	  (%gl:draw-elements :triangles (length (mesh-elts mesh))
 			     :unsigned-int
-			     (* (mesh-offset-elts mesh) 4))))))
+			     (* (mesh-offset-elts mesh)
+				(c-sizeof :float)))))))
 
 (defun flush-renderer ()
   (setf polygon-count-last polygon-count

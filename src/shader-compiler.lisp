@@ -1,7 +1,7 @@
 (in-package :cl-user)
 (defpackage dummy-gl2.shader
   (:use #:cl
-	#:varjo))
+	:varjo))
 (in-package :dummy-gl2.shader)
 
 (defun list-attrib-positions (in-args)

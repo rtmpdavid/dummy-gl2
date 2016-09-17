@@ -7,21 +7,6 @@
 	#:rtg-math))
 (in-package :dummy-gl2.shader)
 
-(defparameter attrib-positions
-  (list :pos2 0
-	:pos3 0
-	:col3 1
-	:col4 1
-	:tex2 2
-	:nor2 3
-	:nor3 3))
-
-(defun attrib-position (attrib)
-  (loop for key in attrib-positions by #'cddr
-	and value in (cdr attrib-positions) by #'cddr
-	if (string= (symbol-name attrib) (symbol-name key))
-	  do (return value)))
-
 (defvar gl-shaders (make-hash-table))
 
 (defstruct uniform
@@ -152,9 +137,8 @@
 	    	  (gl:get-uniform-location (shader-object shader)
 	    				   (varjo::safe-glsl-name-string uniform-name))))
 	  (set-uniform-values uniform values))
-	;; (warn (format nil "Shader ~a has no uniform named ~a"
-	;; 	      shader-name uniform-name))
-	)))
+	(warn (format nil "Shader ~a has no uniform named ~a"
+		      shader-name uniform-name)))))
 
 (defun shader-set-texture (progname name tex-num)
   (%gl:uniform-1i (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) tex-num))
@@ -162,51 +146,4 @@
 (defun shader-set-float (progname name val)
   (%gl:uniform-1f (gl:get-uniform-location (shader-object (get-gl-shader progname)) name) val))
 
-(add-gpu-program :trivial-model-color-uniform
-		 :force-reload t    
-		 :uniforms '((model :mat4)
-			     (col3 :vec3))
-		 :vertex '(((pos3 :vec3))
-			   (* model (v! pos3 1.0)))
-		 :fragment '(()
-			     (v! col3 1.0)))
 
-(add-gpu-program :texture-proj-model
-		 :force-reload t    
-		 :uniforms '((texture-1 :sampler-2d)
-			     (projection :mat4)
-			     (model :mat4))
-		 :vertex '(((pos3 :vec3)
-			    (tex2 :vec2))
-			   (let ((out pos3))
-			     (values (* projection
-					model
-					(v! pos3 1.0))
-				     tex2)))
-		 :fragment '(((tex2 :vec2))
-			     (varjo::texture texture-1 tex2)))
-
-(add-gpu-program :diffuse
-		 :force-reload t    
-		 :uniforms '((model :mat4)
-			     (normal-matrix :mat4)
-			     (projection :mat4)
-			     (light-pos :vec3)
-			     (ambient :float))
-		 :vertex '(((pos3 :vec3)
-			    (nor3 :vec3))
-			   (let
-			       ((nor (* normal-matrix (v! nor3 1.0)))
-				(pos (* model (v! pos3 1.0))))
-			     (values (* projection pos)
-				     (v! (x nor) (y nor) (z nor))
-				     (v! (x pos) (y pos) (z pos)))))
-		 :fragment '(((normal :vec3)
-			      (pos :vec3))
-			     (let* ((light-direction
-				      (varjo::normalize (- light-pos (v! (x pos)
-									 (y pos)
-									 (z pos)))))
-				    (diff (+ ambient
-					     (max (varjo::dot (varjo::normalize normal) light-direction) 0.0))))			       
-			       (v! diff diff diff 1.0))))
