@@ -121,6 +121,7 @@
   (let ((location (uniform-location uniform)))
    (case (uniform-type uniform)
      (:sampler-2d (%gl:uniform-1i location value))
+     (:sampler-2d-shadow (%gl:uniform-1i location value))
      (:mat4 (gl:uniform-matrix-4fv location value nil))
      (:vec3 (gl:uniformf location (x value) (y value) (z value)))
      (:float (gl:uniformf location value))
