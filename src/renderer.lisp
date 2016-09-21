@@ -1,7 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use #:cl
-	#:rtmp-utils))
 (in-package :dummy-gl2)
 
 (defvar static-meshes (make-instance 'gl-vertices))
@@ -56,7 +52,22 @@
 			     (* (mesh-offset-elts mesh)
 				(c-sizeof :float)))))))
 
+(defvar frame-count 0)
+(defvar old-time 0)
+
 (defun flush-renderer ()
-  (setf polygon-count-last polygon-count
-	polygon-count 0)
-  (sdl2:gl-swap-window *window*))
+  (incf frame-count)
+  (let ((time (get-internal-real-time)))
+    (when (>= (/ (- time old-time)
+		 cl::internal-time-units-per-second)
+	      1)
+      (format t "fc: ~a ~a ~a~%"
+	      frame-count polygon-count
+	      (if (zerop polygon-count) "N/A"
+		  (/ (float (- time old-time))
+		     polygon-count)))
+      (setf frame-count 0
+  	    old-time time)))
+  (setf polygon-count 0)
+  (sdl2:gl-swap-window *window*)
+  (finish-output))

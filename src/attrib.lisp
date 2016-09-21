@@ -1,6 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use :cl))
 (in-package :dummy-gl2)
 
 (defun attrib-size (attrib)

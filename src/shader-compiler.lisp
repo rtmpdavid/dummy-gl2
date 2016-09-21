@@ -1,12 +1,8 @@
-(in-package :cl-user)
-(defpackage dummy-gl2.shader
-  (:use #:cl
-	:varjo))
 (in-package :dummy-gl2.shader)
 
 (defun list-attrib-positions (in-args)
   (loop for arg in in-args
-	collect (attrib-position (car arg))))
+     collect (dummy-gl2::attrib-position (car arg))))
 
 (defun gen-in-arg-strings (post-proc-obj)
   (with-slots (varjo::env) post-proc-obj

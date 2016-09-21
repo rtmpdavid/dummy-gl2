@@ -1,8 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use #:cl
-	#:rtmp-utils)
-  (:export start-main-loop))
 (in-package :dummy-gl2)
 
 ;; (gl:gen-texture)

@@ -1,7 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2.shader
-  (:use :varjo
-   :rtg-math))
 (in-package :dummy-gl2.shader)
 
 (add-gpu-program :trivial
@@ -47,7 +43,7 @@
 			    (nor3 :vec3))
 			   (let ((nor (* normal-matrix (v! nor3 1.0)))
 				 (pos (* model (v! pos3 1.0))))
-		0	     (values (* projection pos)
+			     (values (* projection pos)
 				     (v! (x pos) (y pos) (z pos))
 				     (v! (x nor) (y nor) (z nor)))))
 		 :fragment '(((pos :vec3)

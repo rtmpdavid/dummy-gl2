@@ -1,7 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use #:cl
-	#:rtmp-utils))
 (in-package :dummy-gl2)
 
 (defun make-checker-pattern (size &key (color-b '(255 255 255)) (color-f '(0 0 0)))
