@@ -20,6 +20,7 @@
 	       (:file "package")
 	       (:module "src"
 		:components ((:file "bits")
+			     (:file "math")
 			     (:file "assets")
 			     (:file "attrib")
 			     (:file "mesh")

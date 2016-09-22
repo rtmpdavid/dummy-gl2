@@ -44,10 +44,6 @@
 		    while (< c cc)
 		    appending (list orig c cc))))))
 
-(defun mult-mat4 (&rest matrices)
-  (reduce #'rtg-math.matrix4:* matrices
-	  :initial-value (rtg-math.matrix4:identity)))
-
 (defun face-vert (index face verts)
   (elt verts (elt face index)))
 

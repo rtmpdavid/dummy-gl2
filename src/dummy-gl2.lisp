@@ -79,16 +79,16 @@
 
 (defun main-loop ()
   (setf texture-1 (make-texture :image (make-checker-pattern 250 :color-b (mapcar #'floor (list (* 255 0.30) (* 255 0.2) (* 255 0.2)))
-							     :color-f '(255 255 255))))
+								 :color-f '(255 255 255))))
   texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
-						       :color-f '(0 255 0))
-			  :min-filter :linear
-			  :mag-filter :linear
+							  :color-f '(0 255 0))
+			  :min-filter :nearest
+			  :mag-filter :nearest
 			  :wrap-s :clamp-to-edge
 			  :wrap-t :clamp-to-edge)
   (setf fb (make-framebuffer :color (make-texture :size '(500 500)
   						  :internal-format :rgba
-  						  :mag-filter :linear)))
+  						  :mag-filter :nearest)))
   (setf ms-fb (make-framebuffer :color-size *window-size*
 				:samples 8))
   (sdl2:with-event-loop (:method :poll)
@@ -110,7 +110,7 @@
 (defvar bar 0.0)
 
 (defun idle-fun ()
-  (let ((res 1000))
+  (let ((res (/ (first *window-size*) 1.0)))
     (set-framebuffer-size fb res res)
     (set-framebuffer-size ms-fb res res)
     (bind-framebuffer ms-fb)
@@ -120,28 +120,38 @@
     (gl-state-enable :depth-test)
     (gl:polygon-mode :front-and-back :fill)
     (use-gl-shader :diffuse)
-    (let ((model-mat (mult-mat4
-  		      (m4:translation (v! (* -100 (cos bar))
-					  (tan (/ bar 20.0))
-					  (+ -200 (* 200 (1- (sin bar))))))
-		      (m4:rotation-z (* bar 0.6))		       
-  		      (m4:rotation-y (* bar 0.3))		       
-  		      (m4:scale (v! 1 1 1)))))
-      
-      (shader-set-uniform :diffuse :projection
-  			  (mult-mat4
-  			   (rtg-math.projection:perspective res ;; (first *window-size*)
-  							    res ;; (second *window-size*)
-  							    2.0 -10.0 120)))
-      (shader-set-uniform :diffuse :model model-mat)
-      (shader-set-uniform :diffuse :normal-matrix
-  			  (m4:transpose
-  			   (m4:inverse
-  			    model-mat))))
-    (shader-set-uniform :diffuse :light-posistion
-			(v! 1000.0 0.0 0.0 0.0))
-    (shader-set-uniform :diffuse :ambient 0.1)
-    (draw-mesh teapot))
+    (shader-set-uniform :diffuse :light-position
+			(v! 1000.0 0.0 1000.0))
+
+   (shader-set-uniform :diffuse :projection
+			(mult-mat4
+			 (rtg-math.projection:perspective res ;; (first *window-size*)
+							  res ;; (second *window-size*)
+							  2.0 -10.0 120)))
+          (shader-set-uniform :diffuse :view (look-vec
+      					  (v! 0.0
+      					      0.0
+      					      500)
+      					  (v! 0.0 0.0 -1.0)))
+
+    (let ((n 100))
+      (shader-set-uniform :diffuse :view (look-vec
+      					  (v! (* n 0.5 150 (sin (/ bar 20)))
+      					      0.0
+      					      500)
+      					  (v! 0.0 0.0 -1.0)))
+      (dotimes (i n)
+	(let* ((model-mat (mult-mat4
+			   (m4:translation (v! (* 150.0 (+ (- (/ n 2)) i))
+					    (* 100 (sin (+ i bar)))
+					    0.0))
+			   (m4:rotation-y (sin (cos (+ bar (* i i 100.0)))))
+			   (m4:rotation-x (sin (+ bar (* i 100.0))))
+			   (m4:rotation-y (cos (+ bar (* i 100.0))))
+			   (m4:scale (v! 1 1 1)))))
+	  (shader-set-uniform :diffuse :model model-mat)
+	  (shader-set-uniform :diffuse :normal-matrix (m4:transpose (m4:inverse model-mat)))
+	  (draw-mesh teapot)))))
 
   (blit-framebuffer ms-fb :fb-dest fb)
   
