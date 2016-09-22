@@ -1,12 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2.assets
-  (:use :cl
-   :cl-fad
-   #:dummy-gl2.config
-   :rtmp-utils
-   :obj-parser)
-  (:export :list-assets
-   :load-asset))
 (in-package :dummy-gl2.assets)
 
 (defparameter *assets* (make-hash-table :test #'equal))

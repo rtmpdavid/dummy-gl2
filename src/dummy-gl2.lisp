@@ -1,8 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use #:cl
-	#:rtmp-utils)
-  (:export start-main-loop))
 (in-package :dummy-gl2)
 
 (defparameter *sdl2-thread* nil)
@@ -83,6 +78,14 @@
 (defvar ms-fb nil)
 
 (defun main-loop ()
+  (setf texture-1 (make-texture :image (make-checker-pattern 250 :color-b (mapcar #'floor (list (* 255 0.30) (* 255 0.2) (* 255 0.2)))
+							     :color-f '(255 255 255))))
+  texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
+						       :color-f '(0 255 0))
+			  :min-filter :linear
+			  :mag-filter :linear
+			  :wrap-s :clamp-to-edge
+			  :wrap-t :clamp-to-edge)
   (setf fb (make-framebuffer :color (make-texture :size '(500 500)
   						  :internal-format :rgba
   						  :mag-filter :linear)))
@@ -104,14 +107,7 @@
   ;; 						    (gl:viewport 0.0 0.0 data1 data2)))
   )
 
-(defvar frame-count 0)
-(defvar old-time 0)
-(defvar meh 0)
-(defvar foo nil)
 (defvar bar 0.0)
-
-;; (decf ncount)
-;; (defvar ndir 1)
 
 (defun idle-fun ()
   (let ((res 1000))
@@ -195,18 +191,6 @@
   (draw-mesh circle)
   
   (incf bar 0.02)
-  (incf frame-count)
-  (incf meh)
-  (let ((time (get-internal-real-time)))
-    (when (> (- time old-time) 1000)
-      (setf foo (not foo))
-      (format t "fc: ~a ~a ~a~%"
-	      frame-count polygon-count-last
-	      (/ (float (- time old-time))
-		 polygon-count-last))
-      (setf frame-count 0
-  	    old-time time)))
-  
   (flush-renderer))
 
 

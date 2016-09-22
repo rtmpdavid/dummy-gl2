@@ -1,6 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use :cl))
 (in-package :dummy-gl2)
 
 (defun mesh-make-n-gon (n-vertices &optional (offset-phi 0.0d0))

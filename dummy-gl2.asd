@@ -19,8 +19,7 @@
   :components ((:file "config")
 	       (:file "package")
 	       (:module "src"
-		:components ((:file "math")
-			     (:file "bits")
+		:components ((:file "bits")
 			     (:file "assets")
 			     (:file "attrib")
 			     (:file "mesh")

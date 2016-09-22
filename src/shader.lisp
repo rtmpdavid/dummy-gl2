@@ -1,10 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2.shader
-  (:use #:cl
-	#:rtmp-utils
-	#:alexandria
-	#:varjo
-	#:rtg-math))
 (in-package :dummy-gl2.shader)
 
 (defvar gl-shaders (make-hash-table))
@@ -72,7 +65,7 @@
 (defun shader-bind-attrib-locations (shader-program stage-vert)
   (let ((in-args (in-args stage-vert)))
     (loop for arg in in-args
-	  do (gl:bind-attrib-location shader-program (attrib-position (car arg)) (car (last arg))))))
+       do (gl:bind-attrib-location shader-program (dummy-gl2::attrib-position (car arg)) (car (last arg))))))
 
 (defun compile-gl-shader-program (gl-shader)
   (when (shader-object gl-shader) (gl:delete-program (shader-object gl-shader)))

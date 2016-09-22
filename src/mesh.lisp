@@ -1,7 +1,3 @@
-(in-package :cl-user)
-(defpackage dummy-gl2
-  (:use :cl
-   :rtmp-utils))
 (in-package :dummy-gl2)
 
 (defun layout-size (layout)
