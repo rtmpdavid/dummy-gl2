@@ -21,16 +21,17 @@
 	       (:module "src"
 		:components ((:file "bits")
 			     (:file "math")
+			     (:file "gl")
 			     (:file "assets")
 			     (:file "attrib")
 			     (:file "mesh")
 			     (:file "mesh-utils")
+			     (:file "vertices")
 			     (:file "texture")
 			     (:file "shader-compiler")
 			     (:file "shader")
 			     (:file "gpu-programs")
 			     (:file "framebuffer")
-			     (:file "gl")
 			     (:file "renderer")
 			     (:file "dummy-gl2")))
 	       (:module "tools"

@@ -119,9 +119,9 @@
     (gl:cull-face :back)
     (gl-state-enable :depth-test)
     (gl:polygon-mode :front-and-back :fill)
-    (use-gl-shader :diffuse)
+    (use-shader :diffuse)
     (shader-set-uniform :diffuse :light-position
-			(v! 1000.0 0.0 1000.0))
+			(v! 0.0 100.0 0.0))
 
    (shader-set-uniform :diffuse :projection
 			(mult-mat4
@@ -134,11 +134,11 @@
       					      500)
       					  (v! 0.0 0.0 -1.0)))
 
-    (let ((n 100))
+    (let ((n 5))
       (shader-set-uniform :diffuse :view (look-vec
       					  (v! (* n 0.5 150 (sin (/ bar 20)))
       					      0.0
-      					      500)
+      					      350)
       					  (v! 0.0 0.0 -1.0)))
       (dotimes (i n)
 	(let* ((model-mat (mult-mat4
@@ -159,7 +159,7 @@
   (gl:polygon-mode :front-and-back :fill)
 
   (clear-buffers :color '(0.30 0.2 0.2 1.0))
-  (use-gl-shader :texture-proj-model)  
+  (use-shader :texture-proj-model)  
   (use-texture (framebuffer-color-attachment fb) :texture0)
   (shader-set-uniform :texture-proj-model :texture-1 0)
   (shader-set-uniform :texture-proj-model :projection
@@ -200,7 +200,7 @@
   			      0.0)))))
   (draw-mesh circle)
   
-  (incf bar 0.02)
+  (incf bar 0.01)
   (flush-renderer))
 
 

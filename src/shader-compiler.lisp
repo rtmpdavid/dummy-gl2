@@ -2,7 +2,8 @@
 
 (defun list-attrib-positions (in-args)
   (loop for arg in in-args
-     collect (dummy-gl2::attrib-position (car arg))))
+	for attrib = (intern (car (last arg)) "KEYWORD")
+	collect (attrib-position attrib)))
 
 (defun gen-in-arg-strings (post-proc-obj)
   (with-slots (varjo::env) post-proc-obj
@@ -59,3 +60,8 @@
                               (list :fragment version)
                               `(progn ,@(rest fragment)))))))
     (rolling-translate (remove nil stages) #'translate-dgl)))
+
+(defun result-stage (result stage)
+  (find stage result
+	:key #'(lambda (stage)
+		 (slot-value stage 'stage-type))))

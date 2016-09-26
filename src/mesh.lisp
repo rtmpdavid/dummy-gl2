@@ -1,8 +1,5 @@
 (in-package :dummy-gl2)
 
-(defun layout-size (layout)
-  (reduce #'+ (mapcar #'attrib-size layout)))
-
 (defstruct (mesh (:conc-name mesh-)
 		 (:constructor make-mesh
 		     (n-verts n-elts layout)))
