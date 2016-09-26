@@ -46,12 +46,12 @@
 			    (pos (* model (v! pos3 1.0))))
 			(values (* projection view pos)
 				(v! (x pos) (y pos) (z pos))
-				(v! (x nor) (y nor) (z nor)))))
+				(v:normalize (v! (x nor) (y nor) (z nor))))))
 	    :fragment '(((pos :vec3)
 			 (normal :vec3))
 			(let* ((light-direction (v:normalize (- light-position
 								pos)))
-			       (diffuse (max (v:dot (v:normalize normal)
+			       (diffuse (max (v:dot normal
 						    (v:normalize light-direction))
 					     0.0))
 			       (specular (varjo::pow
