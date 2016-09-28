@@ -110,7 +110,7 @@
 (defvar bar 0.0)
 
 (defun idle-fun ()
-  (let ((res (/ (first *window-size*) 1.0)))
+  (let ((res (/ (first *window-size*) 1.5)))
     (set-framebuffer-size fb res res)
     (set-framebuffer-size ms-fb res res)
     (bind-framebuffer ms-fb)
@@ -119,39 +119,61 @@
     (gl:cull-face :back)
     (gl-state-enable :depth-test)
     (gl:polygon-mode :front-and-back :fill)
+
     (use-shader :diffuse)
-    (shader-set-uniform :diffuse :light-position
-			(v! 0.0 100.0 0.0))
+    (shader-set-uniform :diffuse :light-position (v! 0.0 0.0 1000.0))
+    (shader-set-uniform :diffuse :light-color (v! 1.0 1.0 1.0))
+    (shader-set-uniform :diffuse :ambient 0.1)
+    (shader-set-uniform :diffuse :spec-shiny 32.0)
+    (shader-set-uniform :diffuse :spec-strength 1.0)
 
    (shader-set-uniform :diffuse :projection
 			(mult-mat4
 			 (rtg-math.projection:perspective res ;; (first *window-size*)
 							  res ;; (second *window-size*)
-							  2.0 -10.0 120)))
-          (shader-set-uniform :diffuse :view (look-vec
+							  1.0 -1.0 95)))   
+    (let ((n 200))
+      (shader-set-uniform :diffuse :view (look-vec
       					  (v! 0.0
       					      0.0
-      					      500)
-      					  (v! 0.0 0.0 -1.0)))
-
-    (let ((n 5))
-      (shader-set-uniform :diffuse :view (look-vec
-      					  (v! (* n 0.5 150 (sin (/ bar 20)))
-      					      0.0
-      					      350)
+      					      60000)
       					  (v! 0.0 0.0 -1.0)))
       (dotimes (i n)
-	(let* ((model-mat (mult-mat4
-			   (m4:translation (v! (* 150.0 (+ (- (/ n 2)) i))
-					    (* 100 (sin (+ i bar)))
-					    0.0))
-			   (m4:rotation-y (sin (cos (+ bar (* i i 100.0)))))
-			   (m4:rotation-x (sin (+ bar (* i 100.0))))
-			   (m4:rotation-y (cos (+ bar (* i 100.0))))
-			   (m4:scale (v! 1 1 1)))))
+	(let ((phi (* 2 (coerce pi 'single-float) (/ (1+ i) n))))
+	  (shader-set-uniform :diffuse :color (v! (/ (1+ (sin (+ bar phi))) 2)
+						  (/ (1+ (cos (+ bar phi))) 2)
+						  (/ (1+ (cos (+ (* 2.0 bar) phi))) 2)
+						  1.0))
+	  (let* ((model-mat (mult-mat4
+			     (m4:translation (v! (* 150 (+ (- (/ n 2)) i))
+						 (* 10000 (sin (+ i bar)))
+						 (* 10000.0 (cos phi))))
+			     (m4:rotation-y (sin (+ bar (* 2 (coerce pi 'single-float)
+							   (/ (1+ i) n)))))
+			     (m4:rotation-x (/ (+ (* 3 bar) (* i 3.0)) 2.0))
+			     (m4:rotation-y (cos (+ bar (* i 4.0))))
+			     (if (oddp i)
+				 (m4:scale (v3:*s (v! 1 1 1) 800.0))
+				 (m4:scale (v3:*s (v! 1 1 1) 20.0))))))
+
+	    (shader-set-uniform :diffuse :model model-mat)
+	    (shader-set-uniform :diffuse :normal-matrix (m4:transpose (m4:inverse model-mat)))
+	    (draw-mesh (if (oddp i)
+			   urth
+			   teapot)))))))
+
+  (shader-set-uniform :diffuse :color (v! 0.3 0.3 0.3))
+  (shader-set-uniform :diffuse :ambient 0.1)
+  (shader-set-uniform :diffuse :spec-shiny 1.0)
+  (shader-set-uniform :diffuse :spec-strength 0.0)
+  (let* ((model-mat (mult-mat4
+		     (m4:translation (v! 0.0 0.0 -1000000.0))
+		     (m4:rotation-y (* 4 bar))
+		     (m4:scale (v3:*s (v! 1 1 1) 500000.0)))))
+
 	  (shader-set-uniform :diffuse :model model-mat)
 	  (shader-set-uniform :diffuse :normal-matrix (m4:transpose (m4:inverse model-mat)))
-	  (draw-mesh teapot)))))
+	  (draw-mesh cube-2))
 
   (blit-framebuffer ms-fb :fb-dest fb)
   
@@ -200,7 +222,7 @@
   			      0.0)))))
   (draw-mesh circle)
   
-  (incf bar 0.01)
+  (incf bar 0.005)
   (flush-renderer))
 
 

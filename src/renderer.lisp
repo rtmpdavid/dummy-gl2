@@ -12,10 +12,11 @@
        (add-meshes static-meshes ,name))))
 
 (define-and-add-mesh cube-3d (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
+(define-and-add-mesh cube-2 (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube2.obj")))
 (define-and-add-mesh square-3d-tex (mesh-make-square t nil t))
 (define-and-add-mesh circle (mesh-make-n-gon 100))
 (define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
-;; (define-and-add-mesh urth (mesh-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
+(define-and-add-mesh urth (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
 
 (defun init-renderer ()
   )
