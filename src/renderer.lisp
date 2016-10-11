@@ -1,6 +1,6 @@
 (in-package :dummy-gl2)
 
-(defvar static-meshes (make-instance 'gl-vertices))
+(defvar static-meshes (make-instance 'gl-mesh-pack))
 
 (defmacro define-and-add-mesh (name &body body)
   `(progn
@@ -9,14 +9,14 @@
 	   (remove-mesh static-meshes ,name)
 	   (defvar ,name))
        (setf ,name new-mesh)
-       (add-meshes static-meshes ,name))))
+       (mesh-pack-add static-meshes ,name))))
 
-(define-and-add-mesh cube-3d (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
-(define-and-add-mesh cube-2 (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube2.obj")))
+;; (define-and-add-mesh cube-3d (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
+;; (define-and-add-mesh cube-2 (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube2.obj")))
 (define-and-add-mesh square-3d-tex (mesh-make-square t nil t))
-(define-and-add-mesh circle (mesh-make-n-gon 100))
-(define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
-(define-and-add-mesh urth (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
+;; (define-and-add-mesh circle (mesh-make-n-gon 100))
+;; (define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
+;; (define-and-add-mesh urth (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
 
 (defun init-renderer ()
   )
@@ -52,6 +52,16 @@
 			     :unsigned-int
 			     (* (mesh-offset-elts mesh)
 				(c-sizeof :float)))))))
+
+(defun draw-mesh-2 (mesh)
+  (let ((pack (mesh-pack mesh)))
+    (when (not (mesh-pack-validp pack))
+      (mesh-pack-fill-buffers pack))
+    (vao-bind (mesh-vao mesh))
+    (%gl:draw-elements :triangles (length (mesh-elts mesh))
+		       :unsigned-int
+		       (* (mesh-offset-elts mesh)
+			  (c-sizeof :float)))))
 
 (defvar frame-count 0)
 (defvar old-time 0)

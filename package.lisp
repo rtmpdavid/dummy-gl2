@@ -10,13 +10,25 @@
   (:export :list-assets
    :load-asset))
 
-(defpackage dummy-gl2.base-gl
-  (:use :cl)
-  (:export #:gl-object
-	   #:make-gl-object
-	   #:gl-name
-	   #:gl-object-validp
-	   #:gl-object-destructor))
+(defpackage dummy-gl2.bits
+  (:use :cl
+   :cl-fad
+   #:dummy-gl2.config
+   #:rtmp-utils
+   #:rtg-math
+   :obj-parser)
+  (:export #:c-sizeof
+	   #:c-ptr-offset
+	   #:null-pointer
+	   #:continuable
+	   #:update-swank
+	   #:make-simple-array
+	   #:set-array
+	   #:triangulize
+	   #:face-vert
+	   #:face-normal
+	   #:vert-normal
+	   #:calculate-normals))
 
 (defpackage dummy-gl2.attrib
   (:use :cl)
@@ -25,21 +37,60 @@
 	   #:attrib-position
 	   #:layout-size))
 
+(defpackage dummy-gl2.base-gl
+  (:use #:cl
+	#:dummy-gl2.bits
+	#:dummy-gl2.attrib)
+  (:export
+   ;; Base OpenGL object
+   #:gl-object
+   #:make-gl-object
+   #:gl-name
+   #:gl-object-validp
+   #:gl-object-destructor
+   ;; Buffer objects
+   #:gl-buffer-object
+   #:make-gl-buffer-object
+   #:xbo-object
+   #:xbo-validp
+   #:xbo-bind
+   #:xbo-unbind
+   #:xbo-data
+   #:xbo-free
+   #:xbo-alloc
+   #:xbo-pointer
+   #:xbo-fill
+   ;; Vertex arrays
+   #:gl-array-object
+   #:make-gl-array-object
+   #:vao-bind
+   #:vao-unbind
+   #:vao-validp
+   #:vao-vbo
+   #:vao-vbo-offset
+   #:vao-vbo-length
+   #:vao-ebo
+   #:vao-ebo-offset
+   #:vao-ebo-length
+   #:vao-layout))
+
 (defpackage dummy-gl2.shader
-  (:use
-   :cl
-   #:alexandria
-   #:rtmp-utils
-   :varjo
-   #:rtg-math
-   #:dummy-gl2.base-gl
-   #:dummy-gl2.attrib)
+  (:use #:dummy-gl2.bits
+	#:cl
+	#:alexandria
+	#:rtmp-utils
+	:varjo
+	#:rtg-math
+	#:dummy-gl2.base-gl
+	#:dummy-gl2.attrib)
   (:export use-shader
 	   shader-set-uniform))
 
 (defpackage :dummy-gl2
   (:use #:cl
 	#:rtg-math
+	#:dummy-gl2.bits
+	#:dummy-gl2.base-gl
 	#:dummy-gl2.shader
 	#:dummy-gl2.assets
 	#:dummy-gl2.attrib)

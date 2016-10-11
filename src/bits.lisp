@@ -1,4 +1,4 @@
-(in-package :dummy-gl2)
+(in-package :dummy-gl2.bits)
 
 (defun c-sizeof (c-type)
   (declare (inline))

@@ -27,6 +27,7 @@
 			     (:file "mesh")
 			     (:file "mesh-utils")
 			     (:file "vertices")
+			     (:file "mesh-pack")
 			     (:file "texture")
 			     (:file "shader-compiler")
 			     (:file "shader")
