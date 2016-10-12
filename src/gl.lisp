@@ -41,11 +41,10 @@
   (gl:bind-buffer (xbo-target buffer) 0))
 
 (defun xbo-data (buffer)
-  (if (not (xbo-pointer buffer))
-      (error (format nil "Buffer (~a ~a) has no data"
-		     (xbo-target buffer)
-		     (xbo-usage buffer)))
-      (let ((ptr (xbo-pointer buffer)))
+  (let ((ptr (xbo-pointer buffer)))
+    (if (not ptr) (error (format nil "Buffer (~a ~a) has no data"
+				 (xbo-target buffer)
+				 (xbo-usage buffer)))
 	(%gl:buffer-data (xbo-target buffer) (gl:gl-array-byte-size ptr)
 			 (gl::gl-array-pointer ptr) (xbo-usage buffer)))))
 
@@ -60,7 +59,8 @@
 	      (or (not (eq type (gl::gl-array-type (xbo-pointer buffer))))
 		  (/= (* (c-sizeof type) count) (gl:gl-array-byte-size (xbo-pointer buffer)))))
      (xbo-free buffer)))
-  (setf (xbo-pointer buffer) (gl:alloc-gl-array type count)))
+  (when (not (xbo-pointer buffer))
+    (setf (xbo-pointer buffer) (gl:alloc-gl-array type count))))
  
 (defun xbo-fill (buffer data &key (offset 0) (offset-data 0) (count (length data)))
   (loop for i-p from offset
@@ -100,9 +100,7 @@
     (xbo-bind (vao-vbo vao))
     (xbo-bind (vao-ebo vao))
     (vao-set-attrib-pointers vao)
-    ;; (setf (vao-validp vao) t)
-    (xbo-unbind (vao-vbo vao))
-    (xbo-unbind (vao-ebo vao))))
+    (setf (vao-validp vao) nil)))
 
 (defun vao-unbind ()
   (gl:bind-vertex-array 0))

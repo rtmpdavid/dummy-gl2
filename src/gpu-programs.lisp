@@ -4,7 +4,7 @@
 	    :force-reload t    
 	    :uniforms '()
 	    :vertex '(((pos3 :vec3))
-		      (v! 1.0 1.0 1.0 1.0))
+		      (v! pos3 1.0))
 	    :fragment '(()
 			(v! 1.0 1.0 1.0 1.0)))
 
