@@ -12,11 +12,11 @@
        (mesh-pack-add static-meshes ,name))))
 
 ;; (define-and-add-mesh cube-3d (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube.obj")))
-;; (define-and-add-mesh cube-2 (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube2.obj")))
+(define-and-add-mesh cube-2 (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/cube2.obj")))
 (define-and-add-mesh square-3d-tex (mesh-make-square t nil t))
 (define-and-add-mesh circle (mesh-make-n-gon 100))
-;; (define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
-;; (define-and-add-mesh urth (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
+(define-and-add-mesh teapot (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/teapot.obj") t))
+(define-and-add-mesh urth (mesh-make-from-asset (dummy-gl2.assets:load-asset "meshes/urth.obj")))
 
 (defun init-renderer ()
   )
@@ -55,10 +55,10 @@
 
 (defun draw-mesh-2 (mesh)
   (let ((pack (mesh-pack mesh)))
-    (setf (mesh-pack-validp pack) nil)
     (when (not (mesh-pack-validp pack))
       (mesh-pack-fill-buffers pack))
     (vao-bind (mesh-vao mesh))
+    (incf polygon-count (/ (length (mesh-elts mesh)) 3))
     (%gl:draw-elements :triangles (length (mesh-elts mesh))
     		       :unsigned-int
     		       (* (mesh-offset-elts mesh)
@@ -71,14 +71,11 @@
 (defun flush-renderer ()
   (incf frame-count)
   (let ((time (get-internal-real-time)))
-    (when (>= (/ (- time old-time)
-		 cl::internal-time-units-per-second)
-	      1)
+    (when (>= (/ (- time old-time) cl::internal-time-units-per-second) 1)
       (format t "fc: ~a ~a ~a~%"
 	      frame-count polygon-count
 	      (if (zerop polygon-count) "N/A"
-		  (/ (float (- time old-time))
-		     polygon-count)))
+		  (/ (float (- time old-time)) polygon-count)))
       (setf frame-count 0
   	    old-time time)))
   (setf polygon-count 0)

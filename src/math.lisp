@@ -1,8 +1,8 @@
 (in-package :dummy-gl2)
 
-(defun mult-mat4 (&rest matrices)
+(defun m4* (matrix &rest matrices)
   (reduce #'m4:* matrices
-	  :initial-value (rtg-math.matrix4:identity)))
+	  :initial-value matrix))
 
 (defun look-at (e l)
   (let* ((f (v:normalize (v:- l e)))
@@ -33,4 +33,5 @@
 	      0.0 1.0 0.0 (- (y e))
 	      0.0 0.0 1.0 (- (z e))
 	      0.0 0.0 0.0 1.0))))
+
 

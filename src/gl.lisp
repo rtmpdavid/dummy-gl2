@@ -100,7 +100,7 @@
     (xbo-bind (vao-vbo vao))
     (xbo-bind (vao-ebo vao))
     (vao-set-attrib-pointers vao)
-    (setf (vao-validp vao) nil)))
+    (setf (vao-validp vao) t)))
 
 (defun vao-unbind ()
   (gl:bind-vertex-array 0))
