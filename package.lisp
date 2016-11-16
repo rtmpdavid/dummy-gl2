@@ -94,6 +94,6 @@
 	#:dummy-gl2.shader
 	#:dummy-gl2.assets
 	#:dummy-gl2.attrib)
-  (:export start-main-loop))
+  (:export run))
 
 

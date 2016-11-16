@@ -49,6 +49,13 @@
 		 (when *sdl2-thread* (bordeaux-threads:destroy-thread *sdl2-thread*))))
 	(bordeaux-threads:join-thread *sdl2-thread*))))
 
+(defun run (&key (w 500) (h 500) (title "foobar") (dedicated-thread t))
+  (if dedicated-thread (setf *sdl2-thread*
+			     (bt:make-thread
+			      #'(lambda () (start-main-loop :w w :h h :title title))))
+      (progn (setf *sdl2-thread* (bt:current-thread))
+	     (start-main-loop :w w :h h :title title))))
+
 (defun quit ()
   (when *gl-context*
     (free-buffers static-meshes)
