@@ -79,5 +79,5 @@
       (setf frame-count 0
   	    old-time time)))
   (setf polygon-count 0)
-  (sdl2:gl-swap-window *window*)
+  (window-swap *window*)
   (finish-output))

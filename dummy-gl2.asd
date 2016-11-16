@@ -34,6 +34,7 @@
 			     (:file "gpu-programs")
 			     (:file "framebuffer")
 			     (:file "renderer")
+			     (:file "window")
 			     (:file "dummy-gl2")))
 	       (:module "tools"
 		:components (;; (:file "sprite")
