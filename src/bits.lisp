@@ -1,5 +1,13 @@
 (in-package :dummy-gl2.bits)
 
+(defconstant pi/2 (/ pi 2.0d0)
+  "Half a π")
+
+(defconstant spi (coerce pi 'single-float)
+  "π - as a single float")
+
+(defconstant spi/2 (coerce pi/2 'single-float))
+
 (defun c-sizeof (c-type)
   (declare (inline))
   (cffi:foreign-type-size c-type))

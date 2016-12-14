@@ -72,10 +72,10 @@
   (incf frame-count)
   (let ((time (get-internal-real-time)))
     (when (>= (/ (- time old-time) cl::internal-time-units-per-second) 1)
-      (format t "fc: ~a ~a ~a~%"
+      (format t "fc: ~a polycount: ~a average per poly: ~,2f ms~%"
 	      frame-count polygon-count
 	      (if (zerop polygon-count) "N/A"
-		  (/ (float (- time old-time)) polygon-count)))
+		  (* 1000 (/ (float (- time old-time)) polygon-count))))
       (setf frame-count 0
   	    old-time time)))
   (setf polygon-count 0)

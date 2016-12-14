@@ -28,7 +28,10 @@
 	   #:face-vert
 	   #:face-normal
 	   #:vert-normal
-	   #:calculate-normals))
+	   #:calculate-normals
+	   #:pi/2
+	   #:spi
+	   #:spi/2))
 
 (defpackage dummy-gl2.attrib
   (:use :cl)
