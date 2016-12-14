@@ -3,6 +3,7 @@
 (defparameter *sdl2-thread* nil)
 (defparameter *gl-context* nil)
 (defparameter *window* nil)
+(defparameter *limit-fps* nil)
 
 (defun print-info ()
   (multiple-value-bind (sdl2-major sdl2-minor sdl2-patch)
@@ -103,10 +104,10 @@
 (defvar bar 0.0)
 
 (defun idle-fun ()
-  (let ((res (/ (window-h *window*) 1.5)))
-    ;; (set-framebuffer-size fb res res)
-    ;; (set-framebuffer-size ms-fb res res)
-    ;; (bind-framebuffer ms-fb)
+  (let ((res (/ (window-h *window*) 0.5)))
+    (set-framebuffer-size fb (window-w *window*) (window-h *window*))
+    (set-framebuffer-size ms-fb (window-w *window*) (window-h *window*))
+    (bind-framebuffer ms-fb)
     (clear-buffers)
 
     (gl-state-enable :cull-face)
@@ -115,11 +116,12 @@
     (gl:polygon-mode :front-and-back :fill)
 
     (use-shader :diffuse)
-    (shader-set-uniform :diffuse :light-position (v! 0.0 0.0 100000.0))
+    (shader-set-uniform :diffuse :light-position (v! 0.0 0.0 -10.0))
     (shader-set-uniform :diffuse :light-color (v! 1.0 1.0 1.0))
-    (shader-set-uniform :diffuse :ambient 0.1)
-    (shader-set-uniform :diffuse :spec-shiny 32.0)
-    (shader-set-uniform :diffuse :spec-strength 1.0)
+    (shader-set-uniform :diffuse :diffuse 0.7)
+    (shader-set-uniform :diffuse :ambient 0.3)
+    (shader-set-uniform :diffuse :spec-shiny 16.0)
+    (shader-set-uniform :diffuse :spec-strength 0.3)
 
    (shader-set-uniform :diffuse :projection
    			(m4*
@@ -128,81 +130,86 @@
    							  1.0 -1.0 90)))   
    (let ((n 1))
       (shader-set-uniform :diffuse :view (look-vec
-      					  (v! 0.0
-      					      0.0
-      					      60000)
-      					  (v! 0.0 0.0 -1.0)))
+      					  (v! 0.0 0.0 -20.0)
+      					  (v! 0.0 0.0 1.0)))
       (dotimes (i n)
-   	(let ((phi (* 2 (coerce pi 'single-float) (/ (1+ i) n))))
+   	(let ((phi (* 2 spi (/ (1+ i) n))))
    	  (shader-set-uniform :diffuse :color (v! (/ (1+ (sin (+ bar phi))) 2)
-   						  (/ (1+ (cos (+ bar phi))) 2)
-   						  (/ (1+ (cos (+ (* 2.0 bar) phi))) 2)
+						  (/ (1+ (sin (* 2 (+ bar phi)))) 2)
+						  (/ (1+ (sin (* 4 (+ bar phi)))) 2)
    						  1.0))
    	  (let* ((model-mat (m4*
-   			     (m4:translation (v! (* 150 (+ (- (/ n 2)) i))
-   			     			 (* 10000 (sin (+ i bar)))
-   			     			 (* 1000.0 (cos phi))))
+   			     (m4:translation (v! (* 20.0 (sin (+ phi bar)))
+						 (* 20.0 (cos (+ phi bar)))
+						 60.0
+						 ))
    			     ;; (m4:rotation-y (sin (+ bar (* 2 (coerce pi 'single-float)
    			     ;; 				   (/ (1+ i) n)))))
 			     ;; (m4:rotation-x (/ (+ (* 3 bar) (* i 3.0)) 2.0))
 			     
    			     ;; (m4:rotation-y (+ bar (* i 4.0)))
-   			     (if (oddp i)
-   				 (m4:scale (v3:*s (v! 1 1 1) 1000.0))
-   				 (m4:scale (v3:*s (v! 1 1 1) 50.0))))))
+   			     ;; if (oddp i)
+			     (m4:scale (v3:*s (v! 1 1 1) 50.0))
+			     ;; (m4:scale (v3:*s (v! 1 1 1) 0.0005))
+			     )))
 
 	    (shader-set-uniform :diffuse :model model-mat)
    	    (shader-set-uniform :diffuse :normal-matrix (m4:transpose (m4:inverse model-mat)))
-   	    (draw-mesh-2 (if (oddp i)
-   			   urth
-   			   teapot)))))))
+   	    (draw-mesh-2 ;; if (oddp i)
+			 urth
+	     ;; teapot
+
+			 ))))))
 
   (shader-set-uniform :diffuse :color (v! 0.3 0.3 0.3))
-  (shader-set-uniform :diffuse :ambient 0.1)
-  (shader-set-uniform :diffuse :spec-shiny 1.0)
-  (shader-set-uniform :diffuse :spec-strength 0.0)
+  
+    (shader-set-uniform :diffuse :light-position (v! 0.0 0.0 0.0))
+    (shader-set-uniform :diffuse :light-color (v! 1.0 1.0 1.0))
+    (shader-set-uniform :diffuse :diffuse 0.1)
+    (shader-set-uniform :diffuse :ambient 0.1)
+    (shader-set-uniform :diffuse :spec-shiny 1024.0)
+    (shader-set-uniform :diffuse :spec-strength 0.0)
+  
   (let* ((model-mat (m4*
-  		     (m4:translation (v! 0.0 0.0 -1000000.0))
-  		     (m4:rotation-y (* 4 bar))
-  		     (m4:scale (v3:*s (v! 1 1 1) 500000.0)))))
+  		     (m4:translation (v! 0.0 0.0 4.0))
+  		     (m4:rotation-y (* 0.1 bar))
+  		     (m4:scale (v3:*s (v! 1 1 1) 1.0)))))
 
   	  (shader-set-uniform :diffuse :model model-mat)
   	  (shader-set-uniform :diffuse :normal-matrix (m4:transpose (m4:inverse model-mat)))
   	  (draw-mesh-2 cube-2))
 
-  ;; (blit-framebuffer ms-fb :fb-dest fb)
+  (blit-framebuffer ms-fb :fb-dest 0)
   
-  ;; (unbind-framebuffer)
+  (unbind-framebuffer)
   (gl:polygon-mode :front-and-back :fill)
 
   ;; (clear-buffers :color '(0.30 0.2 0.2 1.0))
-    (use-shader :texture-proj-model)  
+  (use-shader :texture-proj-model)  
   (use-texture (framebuffer-color-attachment fb) :texture0)
   (shader-set-uniform :texture-proj-model :texture-1 0)
   (shader-set-uniform :texture-proj-model :projection
   		      (rtg-math.projection::orthographic (window-w *window*)
   							 (window-h *window*)
-  							 0.0 -3.0))
+  							 0.0 -1.0))
   (gl-state-disable :cull-face)
-  ;; (use-texture texture-1 :texture0)
   (let ((s-val (if (apply #'< (window-size *window*))
   		   (window-w *window*)
   		   (window-h *window*))))
     (incf s-val s-val)
     (shader-set-uniform :texture-proj-model :model
   			(m4*
-  			 (m4:rotation-z (- (/ bar 3.0)))
+  			 ;; (m4:rotation-z (- (/ bar 3.0)))
   			 (m4:translation
-  			  (v! (- (/ s-val 2.0))
-  			      (- (/ s-val 2.0))
+  			  (v! (/ (window-w *window*) -2)
+			      (/ (window-h *window*) -2)
   			      0.0))
   			 (m4:scale
-  			  (v! s-val
-  			      s-val
+  			  (v! (window-w *window*)
+			      (window-h *window*)
   			      0.0)))))
-  ;; (draw-mesh-2 circle)
+  ;; (draw-mesh-2 square-3d-tex)
   
   (incf bar 0.005)
   (flush-renderer))
-
 

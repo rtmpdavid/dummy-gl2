@@ -42,6 +42,7 @@
 			(light-position :vec3)
 			(light-color :vec3)
 			(ambient :float)
+			(diffuse :float)
 			(spec-strength :float)
 			(spec-shiny :float))
 	    :vertex '(((pos3 :vec3)
@@ -55,16 +56,15 @@
 			 (normal :vec3))
 			(let* ((n-normal (v:normalize normal))
 			       (light-direction (v:normalize (- light-position pos)))
-			       (diffuse (max (v:dot n-normal light-direction) 0.0))
+			       (diffuse (* diffuse (max (v:dot n-normal light-direction) 0.0)))
 			       (specular (varjo::pow
-					  (max (v:dot (v! 0.0 0.0 -1.0)
+					  (max (v:dot (v! 0.0 0.0 1.0)
 					       	      (varjo-lang:reflect
 						       light-direction 
 						       n-normal))
 					       0.0)
 					  spec-shiny))
-			       (light (+ (* light-color (+ ambient
-							   diffuse (* spec-strength
-								      specular))))))
-			  (v! (* light color) 1.0)
-			  )))
+			       (light (* light-color
+					 (+ ambient diffuse (* spec-strength
+							       specular)))))
+			  (v! (* light color) 1.0))))
