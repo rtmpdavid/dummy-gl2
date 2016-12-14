@@ -84,7 +84,7 @@
   (setf fb (make-framebuffer :color (make-texture :size '(500 500)
   						  :internal-format :rgba
   						  :mag-filter :nearest)))
-  (setf ms-fb (make-framebuffer :color-size (window-dimensions *window*)
+  (setf ms-fb (make-framebuffer :color-size (window-size *window*)
 				:samples 8))
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
@@ -95,13 +95,10 @@
     (:quit () t)))
 
 (defun process-event-window (event data1 data2)
-  (when (= event sdl2-ffi:+sdl-windowevent-resized+)
-    (setf (window-w *window*) data1
-	  (window-h *window*) data2)
-    (gl:viewport 0.0 0.0 data1 data2))
-  ;; (sdl2-ffi:+sdl-windowevent-size-changed+ (progn (setf *window-size* (list data1 data2))
-  ;; 						    (gl:viewport 0.0 0.0 data1 data2)))
-  )
+  (when (or (= event sdl2-ffi:+sdl-windowevent-resized+)
+	    (= event sdl2-ffi:+sdl-windowevent-size-changed+))
+    (setf (window-size *window*) (list data1 data2))
+    (gl:viewport -1.0 -1.0 (/ data1 data2) 1.0)))
 
 (defvar bar 0.0)
 
@@ -126,10 +123,10 @@
 
    (shader-set-uniform :diffuse :projection
    			(m4*
-   			 (rtg-math.projection:perspective res ;; (first *window-size*)
-   							  res ;; (second *window-size*)
-   							  1.0 -1.0 95)))   
-   (let ((n 6))
+   			 (rtg-math.projection:perspective (window-aspect-ratio *window*)
+   							  1.0
+   							  1.0 -1.0 90)))   
+   (let ((n 1))
       (shader-set-uniform :diffuse :view (look-vec
       					  (v! 0.0
       					      0.0
@@ -188,7 +185,7 @@
   							 0.0 -3.0))
   (gl-state-disable :cull-face)
   ;; (use-texture texture-1 :texture0)
-  (let ((s-val (if (apply #'< (window-dimensions *window*))
+  (let ((s-val (if (apply #'< (window-size *window*))
   		   (window-w *window*)
   		   (window-h *window*))))
     (incf s-val s-val)

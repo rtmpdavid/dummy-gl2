@@ -127,7 +127,7 @@
 
 (defun unbind-framebuffer ()
   (gl:bind-framebuffer :framebuffer 0)
-  (apply #'gl:viewport (append (list 0 0) *window-size*)))
+  (apply #'gl:viewport (append (list 0 0) (window-size *window*))))
 
 (defun blit-framebuffer (fb-src &key (fb-dest 0) (filter :nearest) (buffer-bits '(:color-buffer-bit)))
   (if (gl-framebuffer-p fb-src) (bind-framebuffer fb-src :read-framebuffer)
@@ -139,11 +139,11 @@
 		  (append '(0 0)
 			  (if (gl-framebuffer-p fb-src)
 			      (framebuffer-size fb-src)
-			      *window-size*)
+			      (window-size *window*))
 			  '(0 0)
 			  (if (gl-framebuffer-p fb-dest)
 			      (framebuffer-size fb-dest)
-			      *window-size*)
+			      (window-size *window*))
 			  (list bit
 				filter))))
   (gl:bind-framebuffer :draw-framebuffer 0)

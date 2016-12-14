@@ -35,13 +35,13 @@
       (format t "Making OpenGL context current~%")
       (sdl2:gl-make-current (window-handle window) (window-context window)))))
 
-(defun window-dimensions (window)
+(defun window-size (window)
   (list (window-w window)
 	(window-h window)))
 
-(defun (setf window-dimensions) (window dimensions)
-  (setf (window-w *window*) (first dimensions)
-	(window-h *window*) (second dimensions)))
+(defun (setf window-size) (dimensions window)
+  (setf (window-w window) (first dimensions)
+	(window-h window) (second dimensions)))
 
 (defun window-aspect-ratio (window)
   (/ (window-w window)
