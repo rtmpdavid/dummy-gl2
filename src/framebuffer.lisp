@@ -6,6 +6,10 @@
 ;; (gl:gen-framebuffer)
 ;; (gl:bind-framebuffer :framebuffer framebuffer)
 ;; (gl:gen-renderbuffers )
+
+(defun color-attachment-n (n)
+  (intern (format nil "COLOR-ATTACHMENT~a" n) 'keyword))
+
 (defstruct (gl-renderbuffer (:conc-name renderbuffer-))
   (gl-object nil)
   (gl-object-valid-p nil)
@@ -42,43 +46,45 @@
   (gl-object-valid-p nil)
   (size nil)
   (multisample)
-  (color-attachment nil)
+  (color-attachments nil)
   (depth-stencil-attachment nil)
   (stencil-p nil))
 
 (defun make-framebuffer (&key
-			   (color nil color-p)
+			   (color-attachments nil color-p)
+			   (color-n 1)
 			   (color-size nil)
 			   (samples nil)
 			   (depth-stencil nil depth-stencil-p)
 			   (stencil nil)
-			   (depth-stencil-size color-size ds-size-p))
-  (when (and (not ds-size-p) (not depth-stencil-p) color-p)
-    (if (gl-texture-p color)
-	(setf depth-stencil-size (list (tex-width color) (tex-height color)))
-	(setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color)))))
-  (let ((fb (make-gl-framebuffer
-	     :multisample samples
-	     :color-attachment
-	     (if color-p color
-		 (make-gl-renderbuffer :width (elt color-size 0)
-				       :height (elt color-size 1)
-				       :format :rgba
-				       :samples samples))
-	     :depth-stencil-attachment
-	     (if depth-stencil-p depth-stencil
-		 (make-gl-renderbuffer :format (if stencil :depth24-stencil8
-						   :depth-component24)
-				       :samples samples
-				       :width (elt depth-stencil-size 0)
-				       :height (elt depth-stencil-size 1))))))
-    (setf (framebuffer-size fb)
-	  (if color-p
-	      (if (gl-texture-p color)
-		  (setf depth-stencil-size (list (tex-width color) (tex-height color)))
-		  (setf depth-stencil-size (list (renderbuffer-width color) (renderbuffer-height color))))
-	      color-size))
-    fb))
+			   (depth-stencil-size nil))
+  (when (and (not color-p) (not color-size))
+	(error "Can't make framebuffer, no color attachments or color attachment size provided"))
+  (let ((color (if (atom color-attachments) (list color-attachments)
+		   color-attachments)))    
+    (when color-attachments
+      (setf color-size (attachment-size (first color))))
+    (when depth-stencil-p
+      (setf depth-stencil-size (attachment-size depth-stencil)))
+    (when (not depth-stencil-size)
+      (setf depth-stencil-size color-size))
+    (make-gl-framebuffer
+     :size color-size
+     :multisample samples
+     :color-attachments
+     (append color
+	     (loop for i from 0 to (- color-n (length color))
+		collect (make-gl-renderbuffer :width (elt color-size 0)
+					      :height (elt color-size 1)
+					      :format :rgba
+					      :samples samples)))
+     :depth-stencil-attachment
+     (if depth-stencil-p depth-stencil
+	 (make-gl-renderbuffer :format (if stencil :depth24-stencil8
+					   :depth-component24)
+			       :samples samples
+			       :width (elt depth-stencil-size 0)
+			       :height (elt depth-stencil-size 1))))))
 
 (defun attach-texture (fb tex attachment)
   (use-texture tex :texture0 (if (framebuffer-multisample fb)
@@ -110,7 +116,11 @@
   (gl::bind-framebuffer target (framebuffer-gl-object fb))
   (apply #'gl:viewport (append (list 0 0) (framebuffer-size fb)))
   (when (not (framebuffer-gl-object-valid-p fb))
-    (attach-to-framebuffer fb :color-attachment0 (framebuffer-color-attachment fb))
+    (loop for attachment in (framebuffer-color-attachments fb)
+       for n from 0 
+       do (attach-to-framebuffer fb (color-attachment-n n)
+				 attachment))
+    
     (attach-to-framebuffer fb (if (framebuffer-stencil-p fb)
 				  :depth-stencil-attachment
 				  :depth-attachment)
@@ -129,33 +139,55 @@
   (gl:bind-framebuffer :framebuffer 0)
   (apply #'gl:viewport (append (list 0 0) (window-size *window*))))
 
-(defun blit-framebuffer (fb-src &key (fb-dest 0) (filter :nearest) (buffer-bits '(:color-buffer-bit)))
+(defun blit-framebuffer (fb-src &key (fb-dest 0) (read-buffer :front) (filter :nearest) (buffer-bits '(:color-buffer-bit)))
   (if (gl-framebuffer-p fb-src) (bind-framebuffer fb-src :read-framebuffer)
       (gl:bind-framebuffer :read-framebuffer fb-src))
   (if (gl-framebuffer-p fb-dest) (bind-framebuffer fb-dest :draw-framebuffer)
       (gl:bind-framebuffer :draw-framebuffer fb-dest))
+  (gl:read-buffer (if (numberp read-buffer) (color-attachment-n read-buffer)
+		      read-buffer))
   (loop for bit in buffer-bits
-	do (apply #'%gl:blit-framebuffer
-		  (append '(0 0)
-			  (if (gl-framebuffer-p fb-src)
-			      (framebuffer-size fb-src)
-			      (window-size *window*))
-			  '(0 0)
-			  (if (gl-framebuffer-p fb-dest)
-			      (framebuffer-size fb-dest)
-			      (window-size *window*))
-			  (list bit
-				filter))))
+     do (apply #'%gl:blit-framebuffer
+	       (append '(0 0)
+		       (if (gl-framebuffer-p fb-src)
+			   (framebuffer-size fb-src)
+			   (window-size *window*))
+		       '(0 0)
+		       (if (gl-framebuffer-p fb-dest)
+			   (framebuffer-size fb-dest)
+			   (window-size *window*))
+		       (list bit
+			     filter))))
   (gl:bind-framebuffer :draw-framebuffer 0)
   (gl:bind-framebuffer :read-framebuffer 0))
+
+(defun attachment-size (attachment)
+  (if (gl-texture-p attachment)
+      (list (tex-width attachment)
+	    (tex-height attachment))
+      (list (renderbuffer-width attachment)
+	    (renderbuffer-height attachment))))
 
 (defun set-attachment-size (attachment width height)
   (when attachment
     (if (gl-texture-p attachment) (set-texture-size attachment width height)
 	(set-renderbuffer-size attachment width height))))
 
+(defun set-color-attachment-size (fb attachment-n width height)
+  (set-attachment-size (elt (framebuffer-color-attachments fb) attachment-n) width height))
+
 (defun set-framebuffer-size (fb width height)
-  (set-attachment-size (framebuffer-color-attachment fb) width height)
+  (set-attachment-size (elt (framebuffer-color-attachments fb) 0) width height)
   (set-attachment-size (framebuffer-depth-stencil-attachment fb) width height)
   (setf (framebuffer-size fb) (list width height)
 	(framebuffer-gl-object-valid-p fb) nil))
+
+(defun free-framebuffer (fb &optional (clear-textures t))
+  (let ((renderbuffers nil))
+    (push-if (framebuffer-depth-stencil-attachment fb) renderbuffers)
+    (loop for ca in (framebuffer-color-attachments fb)
+       do (if (gl-texture-p ca)
+	      (when clear-textures
+		(free-texture-data ca))
+	      (push-if (renderbuffer-gl-object ca) renderbuffers)))
+    (gl:delete-renderbuffers renderbuffers)))
