@@ -31,7 +31,8 @@
 	   #:calculate-normals
 	   #:pi/2
 	   #:spi
-	   #:spi/2))
+	   #:spi/2
+	   #:push-when))
 
 (defpackage dummy-gl2.attrib
   (:use :cl)

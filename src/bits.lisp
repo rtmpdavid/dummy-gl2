@@ -78,3 +78,9 @@
 	   do (setf (aref normals index)
 		    (v:normalize (reduce #'v:+
 				       (vert-normal verts faces))))))))
+
+(defmacro push-when (thing list)
+  (let ((value (gensym)))    
+    `(let ((,value ,thing))
+       (when ,value
+	 (push ,value ,list)))))

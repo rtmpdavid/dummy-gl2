@@ -1,12 +1,5 @@
 (in-package :dummy-gl2)
 
-;; (gl:gen-texture)
-;; (gl:bind-texture :texture-2d-multisample tex)
-;; (%gl:tex-image-2d-multisample :texture-2d-multisample )
-;; (gl:gen-framebuffer)
-;; (gl:bind-framebuffer :framebuffer framebuffer)
-;; (gl:gen-renderbuffers )
-
 (defun color-attachment-n (n)
   (intern (format nil "COLOR-ATTACHMENT~a" n) 'keyword))
 
@@ -59,9 +52,9 @@
 			   (stencil nil)
 			   (depth-stencil-size nil))
   (when (and (not color-p) (not color-size))
-	(error "Can't make framebuffer, no color attachments or color attachment size provided"))
-  (let ((color (if (atom color-attachments) (list color-attachments)
-		   color-attachments)))    
+    (error "Can't make framebuffer, no color attachments or color attachment size provided"))
+  (let ((color (if (listp color-attachments) color-attachments
+		   (list color-attachments))))    
     (when color-attachments
       (setf color-size (attachment-size (first color))))
     (when depth-stencil-p
@@ -144,8 +137,8 @@
       (gl:bind-framebuffer :read-framebuffer fb-src))
   (if (gl-framebuffer-p fb-dest) (bind-framebuffer fb-dest :draw-framebuffer)
       (gl:bind-framebuffer :draw-framebuffer fb-dest))
-  (gl:read-buffer (if (numberp read-buffer) (color-attachment-n read-buffer)
-		      read-buffer))
+  ;; (gl:read-buffer (if (numberp read-buffer) (color-attachment-n read-buffer)
+  ;; 		      read-buffer))
   (loop for bit in buffer-bits
      do (apply #'%gl:blit-framebuffer
 	       (append '(0 0)
@@ -184,10 +177,14 @@
 
 (defun free-framebuffer (fb &optional (clear-textures t))
   (let ((renderbuffers nil))
-    (push-if (framebuffer-depth-stencil-attachment fb) renderbuffers)
+    (when (framebuffer-depth-stencil-attachment fb)
+      (push-when (renderbuffer-gl-object (framebuffer-depth-stencil-attachment fb))
+		 renderbuffers))
     (loop for ca in (framebuffer-color-attachments fb)
        do (if (gl-texture-p ca)
 	      (when clear-textures
 		(free-texture-data ca))
-	      (push-if (renderbuffer-gl-object ca) renderbuffers)))
-    (gl:delete-renderbuffers renderbuffers)))
+	      (push-when (renderbuffer-gl-object ca) renderbuffers)))
+    (gl:delete-renderbuffers  renderbuffers))
+  (when (framebuffer-gl-object fb)
+    (gl:delete-framebuffers (list (framebuffer-gl-object fb)))))
