@@ -53,7 +53,7 @@
 			   (color-size nil)
 			   (samples nil)
 			   (depth-stencil nil depth-stencil-p)
-			   (stencil nil)
+			   (stencil t)
 			   (depth-stencil-size nil))
   (when (and (not color-p) (not color-size))
     (error "Can't make framebuffer, no color attachments or color attachment size provided"))

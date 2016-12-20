@@ -89,10 +89,15 @@
   ;; (setf ms-fb (make-framebuffer :color-size (window-size *window*)
   ;; 				:samples 8))
   (setf fb (make-framebuffer
-  	    :color-attachments  (loop for i from 0 to 3
+  	    :color-attachments  (loop for i from 0 to 5
 				      collecting (make-texture :size '(500 500)
 							       :internal-format :rgba
-							       :mag-filter :nearest))))
+							       :mag-filter :nearest))
+	    :depth-stencil
+	    (make-texture :size '(500 500)
+			  :internal-format :depth24-stencil8
+			  :format :depth-stencil
+			  :mag-filter :nearest)))
   (sdl2:with-event-loop (:method :poll)
     (:idle ()
 	   (update-swank)
@@ -113,15 +118,17 @@
 (defun idle-fun ()
   (bind-framebuffer fb)
   ;; (draw-full-checkers)
-  (gl:draw-buffers (list :color-attachment0
-			 :color-attachment1
-			 :color-attachment2))
-  (clear-buffers)
-  
+  (gl:draw-buffers (list
+		    :color-attachment0
+		    :color-attachment1
+		    :color-attachment2))
+
   (gl-state-enable :cull-face)
   (gl:cull-face :back)
   (gl-state-enable :depth-test)
   (gl:polygon-mode :front-and-back :fill)
+
+  (clear-buffers)
 
   (let ((shader :deff-step1))
     (use-shader shader)
@@ -157,10 +164,42 @@
 
   (unbind-framebuffer)
   (clear-buffers)
-  (blit-framebuffer fb :read-buffer 0)
-  (blit-framebuffer fb :read-buffer 0 :dst-rect (make-rect 0 0 100 100))
-  (blit-framebuffer fb :read-buffer 1 :dst-rect (make-rect 100 0 200 100))
-  (blit-framebuffer fb :read-buffer 2 :dst-rect (make-rect 200 0 300 100))
+  (gl-state-disable :cull-face)
+  (use-shader :texture-depth)  
+  (use-texture (find-attachment fb :depth-attachment) :texture0)
+  
+  (shader-set-uniform :texture-proj-model :texture-1 0)
+  (shader-set-uniform :texture-proj-model :projection
+		      (rtg-math.projection::orthographic (window-aspect-ratio *window*)
+							 1.0
+							 ;; (window-w *window*)
+							 ;; (window-h *window*)
+							 0.0 1.0))
+  (let ((s-val (if (apply #'< (window-size *window*))
+  		   (window-w *window*)
+  		   (window-h *window*))))
+    (incf s-val s-val)
+    (shader-set-uniform :texture-proj-model :model
+  			(m4*
+			 (m4:identity)
+			 ;; (m4:translation
+  			 ;;  (v! 0.4 0.0 0.0))
+			 
+  			 (m4:translation
+  			  (v! (/ (window-aspect-ratio *window*) -2.0)
+  			      -0.5
+  			      0.0))
+  			 (m4:scale
+  			  (v! (window-aspect-ratio *window*)
+  			      1.0
+  			      0.0))
+			 )))
+  (draw-mesh-2 square-3d-tex)
+  ;; (blit-framebuffer fb :read-buffer 0)
+  (blit-framebuffer fb :read-buffer 0 :dst-rect (make-rect 0 0 150 150))
+  (blit-framebuffer fb :read-buffer 1 :dst-rect (make-rect 150 0 300 150))
+  (blit-framebuffer fb :read-buffer 2 :dst-rect (make-rect 300 0 450 150))
+  ;; (find-attachment )
   (flush-renderer))
 
 (defun draw-full-checkers ()

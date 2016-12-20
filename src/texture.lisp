@@ -77,8 +77,10 @@
 		(tex-height texture) (elt size 1)
 		(tex-pixels texture) (gl:make-null-gl-array :float))))))
 
-(defun use-texture (texture texture-unit &optional (target :texture-2d)
-					   (n-samples 1))
+(defun alloc-texture-data (texture)
+  )
+
+(defun use-texture (texture texture-unit &optional (target :texture-2d) (n-samples 1))
   (if (not (tex-gl-object texture))
       (progn (setf (tex-gl-object texture) (gl:gen-texture))
 	     (bind-gl-texture texture texture-unit target)
@@ -102,7 +104,11 @@
 		    (gl::internal-format->int (tex-internal-format texture))
 		    (tex-width texture) (tex-height texture)
 		    0 (tex-pixel-format texture)
-		    :unsigned-byte
+		     (case (tex-pixel-format texture)
+			   (:rgb :unsigned-byte)
+			   (:rgba :unsigned-byte)
+			   (:depth-stencil :unsigned-int-24-8)
+			   (:depth24-stencil8 :unsigned-int-24-8))
 		    (slot-value (tex-pixels texture) 'gl::pointer))
   (setf (tex-gl-object-valid texture) t))
 
@@ -115,6 +121,7 @@
   (setf (tex-gl-object-valid texture) t))
 
 (defun free-texture-data (texture)
+  (when (tex-pixels texture) (gl:free-gl-array (tex-pixels texture)))
   (when (tex-gl-object texture)
    (gl:delete-textures (list (tex-gl-object texture)))
    (setf (tex-gl-object texture) nil

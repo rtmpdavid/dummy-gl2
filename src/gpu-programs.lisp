@@ -32,6 +32,23 @@
 	    :fragment '(((tex2 :vec2))
 			(varjo::texture texture-1 tex2)))
 
+(add-shader :texture-depth
+	    :force-reload t    
+	    :uniforms '((texture-1 :sampler-2d)
+			(projection :mat4)
+			(model :mat4))
+	    :vertex '(((pos3 :vec3)
+		       (tex2 :vec2))
+		      (let ((out pos3))
+			(values (* projection
+				   model
+				   (v! pos3 1.0))
+				tex2)))
+	    :fragment '(((tex2 :vec2))
+			(v! (x (varjo::texture texture-1 tex2))
+			 (x (varjo::texture texture-1 tex2))
+			 (x (varjo::texture texture-1 tex2)))))
+
 (add-shader :diffuse-point
 	    :force-reload t    
 	    :uniforms '((projection :mat4)
