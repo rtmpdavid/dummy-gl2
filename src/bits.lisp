@@ -79,7 +79,7 @@
 		    (v:normalize (reduce #'v:+
 				       (vert-normal verts faces))))))))
 
-(defmacro push-when (thing list)
+(defmacro push-when-thing (thing list)
   (let ((value (gensym)))    
     `(let ((,value ,thing))
        (when ,value
