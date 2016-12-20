@@ -1,7 +1,11 @@
 (in-package :dummy-gl2)
 
 (defun color-attachment-n (n)
-  (intern (format nil "COLOR-ATTACHMENT~a" n) 'keyword))
+  (when (> n
+	   (cffi::foreign-enum-value '%gl:enum :max-color-attachments))
+    (error (format nil "Your opengl implementation does not support this many color attachments (~a)" n) ))
+  (+ (cffi::foreign-enum-value '%gl:enum :color-attachment0)
+     n))
 
 (defstruct (gl-renderbuffer (:conc-name renderbuffer-))
   (gl-object nil)
@@ -67,10 +71,10 @@
      :color-attachments
      (append color
 	     (loop for i from 0 to (- color-n (length color))
-		collect (make-gl-renderbuffer :width (elt color-size 0)
-					      :height (elt color-size 1)
-					      :format :rgba
-					      :samples samples)))
+		   collect (make-gl-renderbuffer :width (elt color-size 0)
+						 :height (elt color-size 1)
+						 :format :rgba
+						 :samples samples)))
      :depth-stencil-attachment
      (if depth-stencil-p depth-stencil
 	 (make-gl-renderbuffer :format (if stencil :depth24-stencil8
@@ -110,9 +114,9 @@
   (apply #'gl:viewport (append (list 0 0) (framebuffer-size fb)))
   (when (not (framebuffer-gl-object-valid-p fb))
     (loop for attachment in (framebuffer-color-attachments fb)
-       for n from 0 
-       do (attach-to-framebuffer fb (color-attachment-n n)
-				 attachment))
+	  for n from 0 
+	  do (attach-to-framebuffer fb (color-attachment-n n)
+				    attachment))
     
     (attach-to-framebuffer fb (if (framebuffer-stencil-p fb)
 				  :depth-stencil-attachment
@@ -132,25 +136,66 @@
   (gl:bind-framebuffer :framebuffer 0)
   (apply #'gl:viewport (append (list 0 0) (window-size *window*))))
 
-(defun blit-framebuffer (fb-src &key (fb-dest 0) (read-buffer :front) (filter :nearest) (buffer-bits '(:color-buffer-bit)))
-  (if (gl-framebuffer-p fb-src) (bind-framebuffer fb-src :read-framebuffer)
-      (gl:bind-framebuffer :read-framebuffer fb-src))
-  (if (gl-framebuffer-p fb-dest) (bind-framebuffer fb-dest :draw-framebuffer)
-      (gl:bind-framebuffer :draw-framebuffer fb-dest))
-  ;; (gl:read-buffer (if (numberp read-buffer) (color-attachment-n read-buffer)
-  ;; 		      read-buffer))
-  (loop for bit in buffer-bits
-     do (apply #'%gl:blit-framebuffer
-	       (append '(0 0)
-		       (if (gl-framebuffer-p fb-src)
-			   (framebuffer-size fb-src)
-			   (window-size *window*))
-		       '(0 0)
-		       (if (gl-framebuffer-p fb-dest)
-			   (framebuffer-size fb-dest)
-			   (window-size *window*))
-		       (list bit
-			     filter))))
+(defun do-blit (src-rect dst-rect mask filter)
+  (%gl:blit-framebuffer (rx0 src-rect) (ry0 src-rect) (rx1 src-rect) (ry1 src-rect)
+			(rx0 dst-rect) (ry0 dst-rect) (rx1 dst-rect) (ry1 dst-rect)
+			mask filter))
+
+(defun find-color-attachment (fb attachment)
+  "Okay, so we got something not matched by obvious things. Lets see what we can do"
+  (when (or (not (keywordp attachment)))
+    (error (format nil "Don't know what kind of attachment ~a is" attachment)))
+  (let ((n (- (cffi::foreign-enum-value '%gl:enum attachment)
+	      (cffi::foreign-enum-value '%gl:enum :color-attachment0))))
+    (when (or (< n 0)
+	      (> n (cffi::foreign-enum-value '%gl:enum :max-color-attachments)))
+      (error (format nil "Wrong cenum: ~a" attachment)))
+    (values (elt (framebuffer-color-attachments fb) n)
+	    (color-attachment-n n))))
+
+(defun find-attachment (fb attachment)
+  (cond
+    ((numberp attachment) (values (elt (framebuffer-color-attachments fb) attachment)
+				  (color-attachment-n attachment)))
+    ((eq :depth-stencil-attachment attachment) (values
+						(framebuffer-depth-stencil-attachment fb)
+						:depth-stencil-attachment))
+    ((eq :depth-attachment attachment) (values
+					(framebuffer-depth-stencil-attachment fb)
+					:depth-attachment))
+    ((eq :stencil-attachment attachment) (error "stencil attachments not supported yet"))
+    (t (multiple-value-prog1 (find-color-attachment fb attachment)))))
+
+(defun prepare-blit-get-info (fb attachment rectangle target)
+  "Figure out and does things necessary for the framebuffer blitting operations."
+  (if (gl-framebuffer-p fb)
+      (progn
+	(bind-framebuffer fb target)
+	(multiple-value-bind (a sa) (find-attachment fb attachment)
+	  (setf attachment sa)
+	  (when (not rectangle)
+	    (let ((size (attachment-size a)))
+	      (setf rectangle
+		    (make-rect 0 0 (elt size 0) (elt size 1)))))))
+      (progn
+	(gl:bind-framebuffer target fb)
+	(when (not rectangle)
+	  (setf rectangle (make-rect 0 0 (window-w *window*) (window-h *window*))))))
+  (values attachment rectangle))
+
+(defun blit-framebuffer (fb-src &key
+				  (fb-dest 0)
+				  (read-buffer :color-attachment0) 
+				  (filter :nearest)
+				  (mask :color-buffer-bit)
+				  (src-rect nil)
+				  (dst-rect nil))
+  (multiple-value-bind (src-attachment src-rectangle)
+      (prepare-blit-get-info fb-src read-buffer src-rect :read-framebuffer)
+    (gl:read-buffer src-attachment)
+    (multiple-value-bind (dst-attachment dst-rectangle)
+	(prepare-blit-get-info fb-dest nil dst-rect :draw-framebuffer)
+      (do-blit src-rectangle dst-rectangle mask filter)))
   (gl:bind-framebuffer :draw-framebuffer 0)
   (gl:bind-framebuffer :read-framebuffer 0))
 
@@ -181,10 +226,10 @@
       (push-when (renderbuffer-gl-object (framebuffer-depth-stencil-attachment fb))
 		 renderbuffers))
     (loop for ca in (framebuffer-color-attachments fb)
-       do (if (gl-texture-p ca)
-	      (when clear-textures
-		(free-texture-data ca))
-	      (push-when (renderbuffer-gl-object ca) renderbuffers)))
+	  do (if (gl-texture-p ca)
+		 (when clear-textures
+		   (free-texture-data ca))
+		 (push-when (renderbuffer-gl-object ca) renderbuffers)))
     (gl:delete-renderbuffers  renderbuffers))
   (when (framebuffer-gl-object fb)
     (gl:delete-framebuffers (list (framebuffer-gl-object fb)))))

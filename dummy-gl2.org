@@ -39,7 +39,9 @@
 **** Fix up the diffuse shader
 **** Add the ability to launch the thing either in a new thread or in a current one
 **** Add the ability to create a framebuffer with multiple color attachments
-    
+     
+*** <2016-12-20 Tue> More framebuffers
+    Changed framebuffer blitting logic to accommodate more functionality easier
 ** TODO
 *** TODO Figure out how to link this file with dummy-gl2.org
 *** DONE Fix vertices/meshes gl object regeneration

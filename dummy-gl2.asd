@@ -20,6 +20,7 @@
 	       (:file "package")
 	       (:module "src"
 		:components ((:file "bits")
+			     (:file "rect")
 			     (:file "math")
 			     (:file "gl")
 			     (:file "assets")
