@@ -1,4 +1,5 @@
 ;;; Some convinience rectangle manipulation functions
+(in-package :dummy-gl2)
 
 (defun rx0 (rect)
   (aref rect 0))
