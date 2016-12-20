@@ -30,7 +30,7 @@
 				   (v! pos3 1.0))
 				tex2)))
 	    :fragment '(((tex2 :vec2))
-			(varjo::texture texture-1 tex2)))
+			(texture texture-1 tex2)))
 
 (add-shader :texture-depth
 	    :force-reload t    
@@ -45,9 +45,9 @@
 				   (v! pos3 1.0))
 				tex2)))
 	    :fragment '(((tex2 :vec2))
-			(v! (x (varjo::texture texture-1 tex2))
-			 (x (varjo::texture texture-1 tex2))
-			 (x (varjo::texture texture-1 tex2)))))
+			(v! (x (texture texture-1 tex2))
+			 (x (texture texture-1 tex2))
+			 (x (texture texture-1 tex2)))))
 
 (add-shader :diffuse-point
 	    :force-reload t    
@@ -74,7 +74,7 @@
 			(let* ((n-normal (v:normalize normal))
 			       (light-direction (v:normalize (- light-position pos)))
 			       (diffuse (* diffuse (max (v:dot n-normal light-direction) 0.0)))
-			       (specular (varjo::pow
+			       (specular (pow
 					  (max (v:dot (v! 0.0 0.0 1.0)
 					       	      (varjo-lang:reflect
 						       light-direction 
@@ -110,7 +110,7 @@
 			 (normal :vec3))
 			(let* ((n-normal (v:normalize normal))
 			       (diffuse (* diffuse (max (v:dot n-normal light-direction) 0.0)))
-			       (specular (varjo::pow
+			       (specular (pow
 					  (max (v:dot (v! 0.0 0.0 1.0)
 					       	      (varjo-lang:reflect
 						       light-direction 

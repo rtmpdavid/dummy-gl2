@@ -81,12 +81,14 @@
 (defpackage dummy-gl2.shader
   (:use #:dummy-gl2.bits
 	#:cl
-	#:alexandria
 	#:rtmp-utils
-	:varjo
+	#:varjo
+	#:varjo-lang
 	#:rtg-math
 	#:dummy-gl2.base-gl
 	#:dummy-gl2.attrib)
+  (:import-from :alexandria
+		:ensure-gethash)
   (:export use-shader
 	   shader-set-uniform))
 
