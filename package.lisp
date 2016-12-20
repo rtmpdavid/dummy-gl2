@@ -32,7 +32,7 @@
 	   #:pi/2
 	   #:spi
 	   #:spi/2
-	   #:push-when))
+	   #:push-when-thing))
 
 (defpackage dummy-gl2.attrib
   (:use :cl)
@@ -89,7 +89,8 @@
 	#:dummy-gl2.attrib)
   (:import-from :alexandria
 		:ensure-gethash)
-  (:export use-shader
+  (:export shader-update-current
+	   shader-set-active
 	   shader-set-uniform))
 
 (defpackage :dummy-gl2

@@ -2,15 +2,31 @@
 
 (defvar shaders (make-hash-table))
 
+(defvar active-shader nil)
+(defvar current-shader nil)
+
 (defstruct uniform
   (type nil)
-  (location nil))
+  (location nil)
+  (current-value nil)
+  (desired-value nil))
+
+(defun uniform-default-value (type)
+  (case type
+    (:vec2 (v! 0.0 0.0))
+    (:vec3 (v! 0.0 0.0 0.0))
+    (:vec4 (v! 0.0 0.0 0.0 0.0))
+    (:mat3 (m3:0!))
+    (:mat4 (m4:0!))
+    (:sampler-2d 0)
+    (:float 0.0)))
 
 (defstruct (gl-shader (:conc-name shader-)
 		      (:include gl-object))
   (stage-vert nil)
   (stage-frag nil)
   (uniforms (make-hash-table))
+  (uniforms-updated t)
   (attribs (make-hash-table)))
 
 (defun add-shader (name &key (uniforms nil) (version :330) (vertex nil) (fragment nil) (force-reload nil))
@@ -21,6 +37,8 @@
 		  (format nil "GLSL program ~a is already defined, do you wish to continue?" name)))
 	(let ((compile-result (translate-shader uniforms version :vertex vertex :fragment fragment))
 	      (shader (ensure-gethash name shaders (make-gl-shader))))
+	  (if (eq name (first current-shader))
+	      (setf current-shader nil))
 	  (setf (shader-stage-frag shader) (result-stage compile-result :fragment)
 		(shader-stage-vert shader) (result-stage compile-result :vertex)
 		(shader-validp shader) nil
@@ -31,7 +49,9 @@
 	  (loop for u in uniforms
 		do (setf (gethash (intern (symbol-name (first u)) "KEYWORD")
 				  (shader-uniforms (gethash name shaders)))
-			 (make-uniform :type (second u))))))
+			 (make-uniform :type (second u)
+				       :desired-value (uniform-default-value
+						       (second u)))))))
     (cancel () :report "Get current value" (get-shader name))))
 
 (defun get-shader (name)
@@ -61,7 +81,6 @@
       (error (format nil "Failed to compile shader!~%~@[fragment:~%~a~]~%~@[vertex:~%~a~]"
 		     (second fragment-shader) (second vertex-shader))))
     (let ((shader-program (gl:create-program)))
-      (print shader-program)
       (gl:attach-shader shader-program (first vertex-shader))
       (gl:attach-shader shader-program (first fragment-shader))
       ;;vertex shader input attrib locations
@@ -87,43 +106,71 @@
     (compile-shader-program shader))
   (gl:get-attrib-location (shader-object shader) (symbol-name attrib)))
 
-(defun use-shader (name)
-  (let ((shader (get-shader name)))
-    (when (not (shader-validp shader))
-      (when (shader-object shader)
-	(gl:delete-program (shader-object shader))
-	(setf (shader-object shader) nil))
-      (compile-shader-program shader))
-    (gl:use-program (shader-object shader))))
+(defun reset-shader (shader)
+  (when (shader-object shader)
+   (gl:delete-program (shader-object shader)))
+  (compile-shader-program shader))
 
-(defun set-uniform-values (uniform value)  
-  (let ((location (uniform-location uniform)))
+(defun shader-set-active (name)
+  "Sets shader to use in a next draw operation"
+  (when (not (eq name (first active-shader)))
+    (setf active-shader (list name (get-shader name)))))
+
+(defun update-uniform-value (uniform)
+  (let ((location (uniform-location uniform))
+	(value (uniform-desired-value uniform)))
     (case (uniform-type uniform)
       (:sampler-2d (%gl:uniform-1i location value))
       (:sampler-2d-shadow (%gl:uniform-1i location value))
       (:mat4 (gl:uniform-matrix-4fv location value nil))
       (:vec3 (gl:uniformf location (x value) (y value) (z value)))
       (:float (gl:uniformf location value))
-      (t (warn (format nil "Do not yet know how to set ~a" (uniform-type uniform))))))
-  )
+      (t (warn (format nil "Do not yet know how to set ~a" (uniform-type uniform)))))))
+
+(defun shader-update-uniforms ()
+  (when (shader-uniforms-updated (second current-shader))
+    (maphash #'(lambda (name uniform)
+		 (when (not (eq (uniform-desired-value uniform)
+				(uniform-current-value uniform)))
+		   ;; (format t "Updating value for uniform ~a in shader ~a~%" name (first current-shader))
+		   (when (not (uniform-location uniform))
+		     (setf (uniform-location uniform)
+			   (gl:get-uniform-location (shader-object (second current-shader))
+						    (varjo::safe-glsl-name-string name))))
+		   (update-uniform-value uniform)
+		   (setf (uniform-current-value uniform)
+			 (uniform-desired-value uniform))))
+	     (shader-uniforms (second current-shader)))))
+
+(defun shader-set-current ()
+  (let ((use nil))
+    (when (not (eq (first active-shader)
+		   (first current-shader)))
+      (setf current-shader active-shader
+	    use t))
+    (when (not (shader-validp (second current-shader)))
+      (reset-shader (second current-shader))
+      (setf use t))
+    (when use
+      (gl:use-program (shader-object (second current-shader))))))
+
+(defun shader-update-current ()
+  (shader-set-current)
+  (shader-update-uniforms))
 
 (defun shader-set-uniform (shader-name uniform-name values)
   (let* ((shader (get-shader shader-name))
-	 (uniform (gethash uniform-name (shader-uniforms shader))))
-    (if uniform
-	(progn
-	  (when (not (uniform-location uniform))
-	    (setf (uniform-location uniform)
-	    	  (gl:get-uniform-location (shader-object shader)
-	    				   (varjo::safe-glsl-name-string uniform-name))))
-	  (set-uniform-values uniform values))
-	(warn (format nil "Shader ~a has no uniform named ~a"
-		      shader-name uniform-name)))))
+	 (uniform (gethash uniform-name (shader-uniforms shader) nil)))   
+    (if (not uniform) (warn (format nil "Shader ~a has no uniform named ~a" shader-name uniform-name))
+	(when (not (equalp (uniform-desired-value uniform)
+			   values))
+	  (setf (shader-uniforms-updated shader) t
+		(uniform-desired-value uniform) values)))))
 
-(defun shader-set-texture (progname name tex-num)
-  (%gl:uniform-1i (gl:get-uniform-location (shader-object (get-shader progname)) name) tex-num))
+(defun shader-glsl-source (progname stage)
+  (varjo:glsl-code (slot-value
+		    (get-shader progname)
+		    stage)))
 
-(defun shader-set-float (progname name val)
-  (%gl:uniform-1f (gl:get-uniform-location (shader-object (get-shader progname)) name) val))
 
 

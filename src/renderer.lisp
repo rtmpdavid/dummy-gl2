@@ -57,6 +57,7 @@
   (let ((pack (mesh-pack mesh)))
     (when (not (mesh-pack-validp pack))
       (mesh-pack-fill-buffers pack))
+    (shader-update-current)
     (vao-bind (mesh-vao mesh))
     (incf polygon-count (/ (length (mesh-elts mesh)) 3))
     (%gl:draw-elements :triangles (length (mesh-elts mesh))
