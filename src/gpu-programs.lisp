@@ -32,7 +32,7 @@
 	    :fragment '(((tex2 :vec2))
 			(varjo::texture texture-1 tex2)))
 
-(add-shader :diffuse
+(add-shader :diffuse-point
 	    :force-reload t    
 	    :uniforms '((projection :mat4)
 			(model :mat4)
@@ -68,3 +68,62 @@
 					 (+ ambient diffuse (* spec-strength
 							       specular)))))
 			  (v! (* light color) 1.0))))
+
+(add-shader :diffuse-direction
+	    :force-reload t    
+	    :uniforms '((projection :mat4)
+			(model :mat4)
+			(view :mat4)
+			(color :vec3)
+			(normal-matrix :mat4)
+			(light-direction :vec3)
+			(light-color :vec3)
+			(ambient :float)
+			(diffuse :float)
+			(spec-strength :float)
+			(spec-shiny :float))
+	    :vertex '(((pos3 :vec3)
+		       (nor3 :vec3))
+		      (let ((nor (* normal-matrix (v! nor3 1.0)))
+			    (pos (* model (v! pos3 1.0))))
+			(values (* projection view pos)
+				(v! (x pos) (y pos) (z pos))
+				(v! (x nor) (y nor) (z nor)))))
+	    :fragment '(((pos :vec3)
+			 (normal :vec3))
+			(let* ((n-normal (v:normalize normal))
+			       (diffuse (* diffuse (max (v:dot n-normal light-direction) 0.0)))
+			       (specular (varjo::pow
+					  (max (v:dot (v! 0.0 0.0 1.0)
+					       	      (varjo-lang:reflect
+						       light-direction 
+						       n-normal))
+					       0.0)
+					  spec-shiny))
+			       (light (* light-color
+					 (+ ambient diffuse (* spec-strength
+							       specular)))))
+			  (v! (* light color) 1.0))))
+
+
+(add-shader :deff-step1
+	    :force-reload t    
+	    :uniforms '((projection :mat4)
+			(view :mat4)
+			(model :mat4)
+			(color :vec3)
+			(normal-matrix :mat4))
+	    :vertex '(((pos3 :vec3)
+		       (nor3 :vec3))
+		      (let ((pos (* model (v! pos3 1.0)))
+			    (nor (* normal-matrix (v! nor3 1.0))))
+		       (values
+			(* projection view pos)
+			(v! (x pos) (y pos) (z pos))
+			(v! (x nor) (y nor) (z nor)))))
+	    :fragment '(((pos3 :vec3)
+			 (nor3 :vec3))
+			(values
+			 (v! color 1.0)
+			 (v! pos3 1.0)
+			 (v! nor3 1.0))))
