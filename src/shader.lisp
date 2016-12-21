@@ -167,6 +167,14 @@
 	  (setf (shader-uniforms-updated shader) t
 		(uniform-desired-value uniform) values)))))
 
+(defun clear-shaders ()
+  (maphash #'(lambda (name shader)
+	       (when (shader-object shader)
+		 (gl:delete-program (shader-object shader))
+		 (setf (shader-object shader) nil)))
+	   shaders)
+  (setf current-shader nil))
+
 (defun shader-glsl-source (progname stage)
   (varjo:glsl-code (slot-value
 		    (get-shader progname)

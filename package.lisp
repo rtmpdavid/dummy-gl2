@@ -91,7 +91,8 @@
 		:ensure-gethash)
   (:export shader-update-current
 	   shader-set-active
-	   shader-set-uniform))
+	   shader-set-uniform
+	   clear-shaders))
 
 (defpackage :dummy-gl2
   (:use #:cl
