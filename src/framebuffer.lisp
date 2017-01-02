@@ -23,7 +23,8 @@
 	    (not (renderbuffer-gl-object-valid-p rb)))
     (if (renderbuffer-samples rb)
 	(%gl:renderbuffer-storage-multisample
-	 :renderbuffer (renderbuffer-samples rb)
+	 :renderbuffer
+	 (renderbuffer-samples rb)
 	 (renderbuffer-format rb)
 	 (renderbuffer-width rb)
 	 (renderbuffer-height rb))
@@ -31,7 +32,8 @@
 	 :renderbuffer
 	 (renderbuffer-format rb)
 	 (renderbuffer-width rb)
-	 (renderbuffer-height rb)))))
+	 (renderbuffer-height rb)))
+    (setf (renderbuffer-gl-object-valid-p rb) t)))
 
 (defun set-renderbuffer-size (rb width height)
   (setf (renderbuffer-width rb) width
@@ -53,7 +55,7 @@
 			   (color-size nil)
 			   (samples nil)
 			   (depth-stencil nil depth-stencil-p)
-			   (stencil t)
+			   (stencil nil)
 			   (depth-stencil-size nil))
   (when (and (not color-p) (not color-size))
     (error "Can't make framebuffer, no color attachments or color attachment size provided"))
@@ -73,7 +75,7 @@
 	     (loop for i from 0 to (- color-n (length color))
 		   collect (make-gl-renderbuffer :width (elt color-size 0)
 						 :height (elt color-size 1)
-						 :format :rgba
+						 :format :rgb
 						 :samples samples)))
      :depth-stencil-attachment
      (if depth-stencil-p depth-stencil
@@ -81,7 +83,8 @@
 					   :depth-component24)
 			       :samples samples
 			       :width (elt depth-stencil-size 0)
-			       :height (elt depth-stencil-size 1))))))
+			       :height (elt depth-stencil-size 1)))
+     :stencil-p stencil)))
 
 (defun attach-texture (fb tex attachment)
   (use-texture tex :texture0 (if (framebuffer-multisample fb)
@@ -117,10 +120,9 @@
 	  for n from 0 
 	  do (attach-to-framebuffer fb (color-attachment-n n)
 				    attachment))
-    
     (attach-to-framebuffer fb (if (framebuffer-stencil-p fb)
-				  :depth-stencil-attachment
-				  :depth-attachment)
+			      	  :depth-stencil-attachment
+			   	  :depth-attachment)
 			   (framebuffer-depth-stencil-attachment fb))
     (case (gl:check-framebuffer-status :framebuffer)
       (:framebuffer-unsupported (warn "Framebuffer unsopported"))

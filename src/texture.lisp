@@ -34,6 +34,7 @@
   (case format
     (:rgb 3)
     (:rgba 4)
+    (:depth-stencil 2)
     (t (error (format nil "Format ~a not supported" format)))))
 
 (defun create-texture-data (texture)
@@ -75,7 +76,7 @@
       (if image (set-texture-image texture image)
 	  (setf (tex-width texture) (elt size 0)
 		(tex-height texture) (elt size 1)
-		(tex-pixels texture) (gl:make-null-gl-array :float))))))
+		(tex-pixels texture) (gl:make-null-gl-array :char))))))
 
 (defun alloc-texture-data (texture)
   )
@@ -85,10 +86,10 @@
       (progn (setf (tex-gl-object texture) (gl:gen-texture))
 	     (bind-gl-texture texture texture-unit target)
 	     (when (not (eq target :texture-2d-multisample))
-	      (gl:tex-parameter target :texture-wrap-s (tex-wrap-s texture))
-	      (gl:tex-parameter target :texture-wrap-t (tex-wrap-t texture))
-	      (gl:tex-parameter target :texture-min-filter (tex-min-filter texture))
-	      (gl:tex-parameter target :texture-mag-filter (tex-mag-filter texture))))
+	       (gl:tex-parameter target :texture-wrap-s (tex-wrap-s texture))
+	       (gl:tex-parameter target :texture-wrap-t (tex-wrap-t texture))
+	       (gl:tex-parameter target :texture-min-filter (tex-min-filter texture))
+	       (gl:tex-parameter target :texture-mag-filter (tex-mag-filter texture))))
       (bind-gl-texture texture texture-unit target))
   (when (not (tex-gl-object-valid texture))
     (if (eq target :texture-2d-multisample)
@@ -103,12 +104,11 @@
   (%gl:tex-image-2d target 0
 		    (gl::internal-format->int (tex-internal-format texture))
 		    (tex-width texture) (tex-height texture)
-		    0 (tex-pixel-format texture)
-		     (case (tex-pixel-format texture)
-			   (:rgb :unsigned-byte)
-			   (:rgba :unsigned-byte)
-			   (:depth-stencil :unsigned-int-24-8)
-			   (:depth24-stencil8 :unsigned-int-24-8))
+		    0
+		    (tex-pixel-format texture)
+		    (if (eq (tex-internal-format texture) :depth24-stencil8)
+			:unsigned-int-24-8
+			:unsigned-int)
 		    (slot-value (tex-pixels texture) 'gl::pointer))
   (setf (tex-gl-object-valid texture) t))
 
@@ -123,9 +123,9 @@
 (defun free-texture-data (texture)
   (when (tex-pixels texture) (gl:free-gl-array (tex-pixels texture)))
   (when (tex-gl-object texture)
-   (gl:delete-textures (list (tex-gl-object texture)))
-   (setf (tex-gl-object texture) nil
-	 (tex-gl-object-valid texture) nil)))
+    (gl:delete-textures (list (tex-gl-object texture)))
+    (setf (tex-gl-object texture) nil
+	  (tex-gl-object-valid texture) nil)))
 
 (defun set-texture-size (tex width height)
   (free-texture-data tex)
@@ -135,7 +135,7 @@
 (defvar texture-1 (make-texture :image (make-checker-pattern 250 :color-b (mapcar #'floor (list (* 255 0.30) (* 255 0.2) (* 255 0.2)))
 								 :color-f '(255 255 255))))
 (defvar texture-2 (make-texture :image (make-checker-pattern 10 :color-b '(255 0 0)
-							 :color-f '(0 255 0))
+								:color-f '(0 255 0))
 				:min-filter :linear
 				:mag-filter :linear
 				:wrap-s :clamp-to-edge

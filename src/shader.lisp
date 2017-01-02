@@ -108,7 +108,8 @@
 
 (defun reset-shader (shader)
   (when (shader-object shader)
-   (gl:delete-program (shader-object shader)))
+    (gl:delete-program (shader-object shader))
+    (setf (shader-object shader) nil))
   (compile-shader-program shader))
 
 (defun shader-set-active (name)
@@ -136,7 +137,7 @@
 		   (when (not (uniform-location uniform))
 		     (setf (uniform-location uniform)
 			   (gl:get-uniform-location (shader-object (second current-shader))
-						    (varjo::safe-glsl-name-string name))))
+						    (varjo::safe-glsl-name-string name))))		   
 		   (update-uniform-value uniform)
 		   (setf (uniform-current-value uniform)
 			 (uniform-desired-value uniform))))
