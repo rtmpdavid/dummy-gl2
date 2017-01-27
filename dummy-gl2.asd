@@ -36,6 +36,7 @@
 			     (:file "framebuffer")
 			     (:file "renderer")
 			     (:file "window")
+			     (:file "scheduler")
 			     (:file "dummy-gl2")))
 	       (:module "tools"
 		:components (;; (:file "sprite")

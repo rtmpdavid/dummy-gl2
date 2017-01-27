@@ -5,6 +5,23 @@
 (defparameter *window* nil)
 (defparameter *limit-fps* nil)
 
+(defparameter counter-frequency 1)
+(defparameter *last-runtime-counter* 0)
+(defparameter *runtime-delta* 0)
+
+(defun update-runtime-counter ()
+  (declare (optimize speed)
+	   (type (integer 0) *last-runtime-counter*))
+  (let ((new-time (sdl2:get-performance-counter)))
+    (psetf *runtime-delta* (truncate (- new-time *last-runtime-counter*)
+				     counter-frequency)
+	   *last-runtime-counter* new-time)))
+
+(defun get-run-time ()
+  (declare (optimize speed)
+	   (type (integer 0) *last-runtime-counter*))
+  (truncate (sdl2:get-performance-counter) counter-frequency))
+
 (defun print-info ()
   (multiple-value-bind (sdl2-major sdl2-minor sdl2-patch)
       (sdl2:version-wrapped)
@@ -32,6 +49,7 @@
    #'(lambda ()
        (unwind-protect 
 	    (sdl2:init :everything)
+	 (setf counter-frequency (truncate (sdl2:get-performance-frequency) 1000000))
 	 (init-window :w w :h h :title title)
 	 (init-renderer)
 	 (print-info)
@@ -91,18 +109,19 @@
   ;; (setf ms-fb (make-framebuffer :color-size (window-size *window*)
   ;; 				:samples 8))
   (setf fb (make-framebuffer
-  	    :color-attachments  (loop for i from 0 to 5
+  	    :color-attachments  (loop for i from 0 to 3
   				      collecting (make-texture :size '(500 500)
   							       :internal-format :rgba
   							       :mag-filter :nearest))
   	    :depth-stencil
   	    (make-texture :size '(500 500)
-  	    		  :internal-format :depth-stencil
-  	    		  :format :depth-stencil
-  	    		  :mag-filter :nearest)))
+  	    		  :internal-format :depth24-stencil8
+  	    		  :format :depth-stencil)))
   (sdl2:with-event-loop (:method :poll)
-    (:idle ()
+    (:idle ()	   
 	   (update-swank)
+	   (update-runtime-counter)
+	   (scheduler-step)
 	   (continuable (idle-fun)))
     (:windowevent (:event e :data1 d1 :data2 d2)
 		  (process-event-window e d1 d2))
@@ -120,19 +139,19 @@
 
 (defun idle-fun ()
 
-  (setf fb (make-framebuffer
-  	    :color-attachments  (loop for i from 1 to 3
-  				      collecting (make-texture :size '(500 500)
-  							       :internal-format :rgba
-  							       :mag-filter :nearest))
-  	    :depth-stencil
-  	    (make-texture :size '(500 500)
-  	    		  :internal-format :depth24-stencil8
-  	    		  :format :depth-stencil
-  	    		  :mag-filter :nearest
-  	    		  :min-filter :nearest)
-  	    :stencil t
-  	    ))
+  ;; (setf fb (make-framebuffer
+  ;; 	    :color-attachments  (loop for i from 1 to 3
+  ;; 				      collecting (make-texture :size '(500 500)
+  ;; 							       :internal-format :rgba
+  ;; 							       :mag-filter :nearest))
+  ;; 	    :depth-stencil
+  ;; 	    (make-texture :size '(500 500)
+  ;; 	    		  :internal-format :depth24-stencil8
+  ;; 	    		  :format :depth-stencil
+  ;; 	    		  :mag-filter :nearest
+  ;; 	    		  :min-filter :nearest)
+  ;; 	    :stencil t
+  ;; 	    ))
 
   (bind-framebuffer fb)
 
@@ -149,6 +168,7 @@
   (gl:polygon-mode :front-and-back :fill)
 
   (clear-buffers)
+  
   (let ((shader :deff-step1))
     (shader-set-active shader)
     (shader-set-uniform shader :color (v! 1.0 1.0 1.0))
@@ -187,10 +207,10 @@
   (draw-texture-overlay (find-attachment fb 1) (make-rect 0 300 300 600))
   (draw-texture-overlay (find-attachment fb 2) (make-rect 0 600 300 900))
   (draw-texture-overlay (find-attachment fb :depth-attachment) (make-rect 300 0 600 300))
-  (free-framebuffer fb)
+  ;; (free-framebuffer fb)
   (flush-renderer))
 
-(defun draw-texture-overlay (tex rect shader)
+(defun draw-texture-overlay (tex rect)
   (shader-set-active :texture-proj-model)
   (use-texture tex :texture0)
   (shader-set-uniform :texture-proj-model :texture-1 0)
