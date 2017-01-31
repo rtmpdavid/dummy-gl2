@@ -22,6 +22,7 @@
 		:components ((:file "bits")
 			     (:file "rect")
 			     (:file "math")
+			     (:file "time")
 			     (:file "gl")
 			     (:file "assets")
 			     (:file "attrib")
